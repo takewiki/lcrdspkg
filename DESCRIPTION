@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 0.1.0
+Version: 0.1.1
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: More about what it does (maybe more than one line)
@@ -9,3 +9,4 @@ Description: More about what it does (maybe more than one line)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.0.2
