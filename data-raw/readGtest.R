@@ -8,11 +8,13 @@ mydata <-bb$data_norm
 View(mydata)
 
 
-Gtab_write_db(sheetName = 'YE604B339')
+Gtab_batchWrite_db(file = 'data-raw/bom_src2.xlsx')
 
 #批写处理
 
 Gtab_batchWrite_db(exclude_sheetName = lc_exclude_sheetNames())
+
+Gtab_batchWrite_db(conn=conn,file = ffile,exclude_sheetName = lc_exclude_sheetNames(),show_progress = true)
 
 
 #测试数据

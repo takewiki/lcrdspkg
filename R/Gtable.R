@@ -150,7 +150,14 @@ Gtab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.
   if(ncount>0){
     #处理并上传数据库服务器
     names(data) <- Gtab_normColNames_db()
+    #删除已有的数据，然后再上传
+    FchartNo <- unique(data$FchartNo)
+    Gtab_delete_db(conn,FchartNo)
+    #再上传数据
     tsda::upload_data(conn,'t_lcrds_gtab',data = data)
+    #写入上传日志
+    sql_update <- paste0("insert into t_lcrds_UploadLog (FchartNo) values('",FchartNo,"')")
+    tsda::sql_update(conn,sql_update)
   }
 
 }
@@ -314,5 +321,8 @@ Gtab_get_uniqueMembers <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A
   }
   return(info)
 }
+
+
+
 
 

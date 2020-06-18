@@ -15,6 +15,8 @@ Ltab_write_db (sheetName = 'YE604B797')
 #批量写入数据库
 Ltab_batchWrite_db(exclude_sheetName = lc_exclude_sheetNames())
 
+#Ltab_batchWrite_db(conn = conn,file = file,exclude_sheetName = lc_exclude_sheetNames(),show_progress = TRUE)
+
 
 
 
@@ -41,6 +43,9 @@ Ltab_get_uniqueVars()
 Ltab_get_uniqueMembers()
 
 Ltab_get_varValue(FLtab = 'L10')
+
+lc_exclude_sheetNames()
+
 
 
 

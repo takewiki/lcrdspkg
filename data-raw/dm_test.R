@@ -28,4 +28,6 @@ View(mydata4)
 
 
 
+dm_dealAll()
+
 

@@ -138,6 +138,10 @@ Ltab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.
   if(ncount>0){
     #处理并上传数据库服务器
     names(data) <- Ltab_normColNames_db()
+    #删除已有的数据，然后再上传
+    FchartNo <- unique(data$FchartNo)
+    Ltab_delete_db(conn,FchartNo)
+    #再上传数据
     tsda::upload_data(conn,'t_lcrds_ltab',data = data)
   }
 
@@ -237,7 +241,7 @@ Ltab_get_uniqueVars <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A049
   if(ncount >0){
     info <- res$FkeyNo
   }else{
-    info <- NULL
+    info <- NA
   }
   return(info)
 }
@@ -260,7 +264,7 @@ Ltab_get_uniqueMembers <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A
   if(ncount >0){
     info <- res$FLtab
   }else{
-    info <- NULL
+    info <- NA
   }
   return(info)
 }
@@ -291,5 +295,28 @@ Ltab_get_varValue <- function(conn=tsda::conn_rds('lcrds'),FchartNo = 'SYE601B67
   return(res)
 }
 
+#' L表删除
+#'
+#' @param conn 逻辑
+#' @param FchartNo 主图号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Ltab_delete_db()
+Ltab_delete_db <- function(conn=tsda::conn_rds('lcrds'),FchartNo='P235067C156'){
+  #back up del
+  sql_bak <- paste0("insert into t_lcrds_ltabDel(FchartNo,FLtab,FkeyNo,FLength)
+
+select FchartNo,FLtab,FkeyNo,FLength   from t_lcrds_ltab
+where FchartNo='",FchartNo,"'")
+  tsda::sql_update(conn,sql_bak)
+  #exec del
+  sql_del <- paste0("delete from t_lcrds_ltab where FchartNo = '",FchartNo,"'")
+  tsda::sql_update(conn,sql_del)
+  res <- TRUE
+  return(res)
+}
 
 
