@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' lc_read_G_table()
-Gtab_read <- function(file="./data-raw/bom_src.xlsx",sheetName="P235911B000",max_row=98,rm.na=TRUE) {
+Gtab_read <- function(file="./data-raw/bom_src.xlsx",sheetName="P235911B000",max_row=198,rm.na=TRUE) {
   bom_src <- read_excel(file,
                         sheet = sheetName, n_max = max_row)
   #针对数据行进行判断,防止出错
@@ -142,7 +142,7 @@ Gtab_normColNames_db <- function(){
 #'
 #' @examples
 #' Gtab_write_db()
-Gtab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",sheetName="P235911B000",max_row=98,rm.na=TRUE,is_force) {
+Gtab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",sheetName="P235911B000",max_row=198,rm.na=TRUE,is_force) {
 
   r <- Gtab_read(file = file,sheetName = sheetName,max_row = max_row,rm.na = rm.na)
   data <- r$data_norm
@@ -167,20 +167,30 @@ Gtab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.
 #'
 #' @param conn 连接
 #' @param file 文件
-#' @param exclude_sheetName 排除表页签
 #' @param show_progress 是否显示进度
 #' @param max_row 最大行
 #' @param rm.na 删除空行
+#' @param include_sheetNames 只更新指定页签
 #'
 #' @return 返回值
 #' @export
 #'
 #' @examples
 #' Gtab_batchWrite_db()
-Gtab_batchWrite_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",exclude_sheetName="YE604B797",show_progress=FALSE,max_row=98,rm.na=TRUE){
+Gtab_batchWrite_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",include_sheetNames=NA,show_progress=FALSE,max_row=198,rm.na=TRUE){
   sheetNames_all <- tsda::excel_getSheetNames(file)
+  exclude_sheetName <-lc_exclude_sheetNames()
   #排除不需要的页签
-  sheetNames_selected <- sheetNames_all[!sheetNames_all %in% exclude_sheetName]
+  if(is.na(include_sheetNames)){
+    #全部页签
+    sheetNames_selected <- sheetNames_all[!sheetNames_all %in% exclude_sheetName]
+  }else{
+    #指定页签
+    str_split <-strsplit(include_sheetNames,",")
+    sheetNames_selected <- str_split[[1]]
+    }
+
+
   ncount <- length(sheetNames_selected)
   if(show_progress){
     #显示进度条
@@ -245,6 +255,35 @@ Gtab_select_db <- function(conn=tsda::conn_rds('lcrds'),FchartNo='P235067C156',F
       ,FGtab
       ,FQty
   FROM t_lcrds_gtab where FchartNo ='",FchartNo,"'  and FGtab ='",FGtab,"'")
+  res <- tsda::sql_select(conn,sql)
+  return(res)
+
+}
+
+
+
+#' 从数据库中读取G表
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Gtab_select_db()
+Gtab_selectDB_byChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='P235067C156') {
+  sql <- paste0("SELECT FchartNo
+      ,FItemName
+      ,FSubChartNo
+      ,FkeyNo
+      ,FLtab
+      ,FItemModel
+      ,FNote
+      ,FIndexTxt
+      ,FGtab
+      ,FQty
+  FROM t_lcrds_gtab where FchartNo ='",FchartNo,"'")
   res <- tsda::sql_select(conn,sql)
   return(res)
 
@@ -322,6 +361,39 @@ Gtab_get_uniqueMembers <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A
   return(info)
 }
 
+
+
+#' 查询相关
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Gtab_selectDB_byChartNo2()
+Gtab_selectDB_byChartNo2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A049') {
+  sql <- paste0("select
+
+FchartNo 主图号
+,FItemName 名称
+,FSubChartNo 分图号
+,FkeyNo 件号
+,FLtab L番
+,FItemModel 规格
+,FNote 备注
+,FIndexTxt 序号
+,FGtab G番
+,FQty 数量
+
+
+from  t_lcrds_gtab where FchartNo='",FchartNo,"'
+order by FchartNo,FGtab,FIndexTxt")
+  res <- tsda::sql_select(conn,sql)
+  return(res)
+
+}
 
 
 

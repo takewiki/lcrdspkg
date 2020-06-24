@@ -7,7 +7,7 @@
 Ltab_read(
   file = "./data-raw/bom_src.xlsx",
   sheetName = "YE604B797",
-  skip_rows = 98,
+  skip_rows = 199,
   rm.na = TRUE
 )
 }
@@ -16,7 +16,7 @@ Ltab_read(
 
 \item{sheetName}{页答名称}
 
-\item{skip_rows}{一般从第100行开始，跳过98行}
+\item{skip_rows}{一般从第200行开始，跳过199行}
 
 \item{rm.na是否去除}{}
 }

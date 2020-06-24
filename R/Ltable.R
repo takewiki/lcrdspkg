@@ -2,7 +2,7 @@
 #'
 #' @param file 文件名称xlsx
 #' @param sheetName 页答名称
-#' @param skip_rows 一般从第100行开始，跳过98行
+#' @param skip_rows 一般从第200行开始，跳过199行
 #' @param rm.na是否去除
 #'
 #' @return 返回值
@@ -10,7 +10,7 @@
 #'
 #' @examples
 #' Ltab_read()
-Ltab_read <- function(file="./data-raw/bom_src.xlsx",sheetName="YE604B797",skip_rows=98,rm.na=TRUE) {
+Ltab_read <- function(file="./data-raw/bom_src.xlsx",sheetName="YE604B797",skip_rows=199,rm.na=TRUE) {
   bom_src <- read_excel(file,
                         sheet = sheetName, skip = skip_rows)
   #针对数据行进行判断,防止出错
@@ -130,7 +130,7 @@ Ltab_normColNames_db <- function(){
 #'
 #' @examples
 #' Ltab_write_db()
-Ltab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",sheetName="YE604B797",skip_rows=98,rm.na=TRUE) {
+Ltab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",sheetName="YE604B797",skip_rows=199,rm.na=TRUE) {
 
   r <- Ltab_read(file=file,sheetName = sheetName,skip_rows = skip_rows,rm.na = rm.na)
   data <- r$data_norm
@@ -161,10 +161,19 @@ Ltab_write_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.
 #'
 #' @examples
 #' Ltab_batchWrite_db()
-Ltab_batchWrite_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",exclude_sheetName="YE604B797",show_progress=FALSE,skip_rows=98,rm.na=TRUE){
+Ltab_batchWrite_db <- function(conn=tsda::conn_rds('lcrds'),file="./data-raw/bom_src.xlsx",include_sheetNames=NA,show_progress=FALSE,skip_rows=199,rm.na=TRUE){
   sheetNames_all <- tsda::excel_getSheetNames(file)
+  exclude_sheetName <-lc_exclude_sheetNames()
   #排除不需要的页签
-  sheetNames_selected <- sheetNames_all[!sheetNames_all %in% exclude_sheetName]
+  if(is.na(include_sheetNames)){
+    #全部页签
+    sheetNames_selected <- sheetNames_all[!sheetNames_all %in% exclude_sheetName]
+  }else{
+    #指定页签
+    str_split <-strsplit(include_sheetNames,",")
+    sheetNames_selected <- str_split[[1]]
+  }
+
   ncount <- length(sheetNames_selected)
   if(show_progress){
     #显示进度条
@@ -222,6 +231,24 @@ where FchartNo = '",FchartNo,"'")
   return(data)
 }
 
+
+#' 查询L表相关信息
+#'
+#' @param conn  连接
+#' @param FchartNo 主图号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Ltab_select_db2()
+Ltab_select_db2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A049') {
+  sql <- paste0("select FchartNo,FLtab,FkeyNo,FLength from t_lcrds_ltab
+where FchartNo = '",FchartNo,"'")
+  data <- tsda::sql_select(conn,sql)
+  names(data) <- Ltab_normColNames()
+  return(data)
+}
 
 
 #' L表获取唯一变量

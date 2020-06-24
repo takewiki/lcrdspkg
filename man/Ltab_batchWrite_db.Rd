@@ -7,9 +7,9 @@
 Ltab_batchWrite_db(
   conn = tsda::conn_rds("lcrds"),
   file = "./data-raw/bom_src.xlsx",
-  exclude_sheetName = "YE604B797",
+  include_sheetNames = NA,
   show_progress = FALSE,
-  skip_rows = 98,
+  skip_rows = 199,
   rm.na = TRUE
 )
 }
@@ -18,13 +18,13 @@ Ltab_batchWrite_db(
 
 \item{file}{文件}
 
-\item{exclude_sheetName}{排除页签}
-
 \item{show_progress}{是否显示进度}
 
 \item{skip_rows}{跳过行数}
 
 \item{rm.na}{删除空行}
+
+\item{exclude_sheetName}{排除页签}
 }
 \value{
 返回值

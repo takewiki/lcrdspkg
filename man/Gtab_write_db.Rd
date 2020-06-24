@@ -8,7 +8,7 @@ Gtab_write_db(
   conn = tsda::conn_rds("lcrds"),
   file = "./data-raw/bom_src.xlsx",
   sheetName = "P235911B000",
-  max_row = 98,
+  max_row = 198,
   rm.na = TRUE,
   is_force
 )

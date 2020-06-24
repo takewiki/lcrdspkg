@@ -21,5 +21,23 @@ lc_exclude_sheetNames <- function() {
 }
 
 
+#' 获取BOM页答名称
+#'
+#' @param file 文件
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' lc_bom_sheetName()
+lc_bom_sheetName <- function(file){
+  sheetNames_all <- tsda::excel_getSheetNames(file)
+  exclude_sheetName <-lc_exclude_sheetNames()
+  res <- sheetNames_all[!sheetNames_all %in% exclude_sheetName]
+  return(res)
+
+}
+
+
 
 

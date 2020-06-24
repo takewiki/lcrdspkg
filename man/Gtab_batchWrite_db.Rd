@@ -7,9 +7,9 @@
 Gtab_batchWrite_db(
   conn = tsda::conn_rds("lcrds"),
   file = "./data-raw/bom_src.xlsx",
-  exclude_sheetName = "YE604B797",
+  include_sheetNames = NA,
   show_progress = FALSE,
-  max_row = 98,
+  max_row = 198,
   rm.na = TRUE
 )
 }
@@ -18,7 +18,7 @@ Gtab_batchWrite_db(
 
 \item{file}{文件}
 
-\item{exclude_sheetName}{排除表页签}
+\item{include_sheetNames}{只更新指定页签}
 
 \item{show_progress}{是否显示进度}
 

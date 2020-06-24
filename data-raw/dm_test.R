@@ -31,3 +31,12 @@ View(mydata4)
 dm_dealAll()
 
 
+dm_ReadBy_ChartNo_Ltab(FchartNo = 'YE604B797',FLtab = 'L01')
+
+
+dm2 <-dm_ReadBy_ChartNo(FchartNo = 'YE604B797')
+View(dm2)
+
+
+dm_writeDB_ChartNo(FchartNo = 'YE604B797')
+

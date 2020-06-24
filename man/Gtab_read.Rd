@@ -7,7 +7,7 @@
 Gtab_read(
   file = "./data-raw/bom_src.xlsx",
   sheetName = "P235911B000",
-  max_row = 98,
+  max_row = 198,
   rm.na = TRUE
 )
 }

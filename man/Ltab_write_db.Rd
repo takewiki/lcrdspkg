@@ -8,7 +8,7 @@ Ltab_write_db(
   conn = tsda::conn_rds("lcrds"),
   file = "./data-raw/bom_src.xlsx",
   sheetName = "YE604B797",
-  skip_rows = 98,
+  skip_rows = 199,
   rm.na = TRUE
 )
 }
