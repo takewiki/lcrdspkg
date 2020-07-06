@@ -668,5 +668,428 @@ dm_queryAll <-function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=tsd
 
 
 
+#' 判断G翻是否可以扩展
+#'
+#' @param x 向量
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_G_extendable()
+dm_G_extendable <- function(x){
+  res <- lapply(x, function(i){
+    if (is.na(i)){
+      value <- ""
+    }else{
+      value <- i
+    }
+    r <- tsdo::left(value) =='G'
+    r <- as.integer(r)
+    return(r)
+  })
+  info <- unlist(res)
+  return(info)
+}
+
+
+#' 查询DM清单数据
+#'
+#' @param file 文件
+#' @param sheet 页答
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_queryAll2()
+dm_queryAll2 <-function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=tsda::conn_rds('lcrds')){
+
+  data <- try({
+    dm_queryAll(file = file,sheet = sheet,conn = conn)
+  })
+  names(data) <-c('FDmNo',
+                  'FLevel',
+                  'FParentRowNo',
+                  'FParentItemNo',
+                  'FParentItemName',
+                  'FParentQty',
+                  'FParentChartNo',
+                  'FParentGNo',
+                  'FParentLNo',
+                  'FchartNo2','FParamG2','FParamL2','FItemName','FSubChartNo','FkeyNo','FLtab',
+                  'FItemModel','FNote','FIndexTxt','FQty','FLength','FTotalQty'
+)
+  #针对数据进行判断
+  data$FExtendable <- dm_G_extendable(data$FkeyNo)
+  #完成针对子项的打标数据
+  #针对不需要扩展的字段设置已完成处理
+  data$FIsDo  <-0
+  data$FIsDo[data$FExtendable == 0] <- 1
+
+  data$FExtendSeq <- 0
+  data$FSubRowNo <-data$FParentRowNo
+  #列示所有列名称
+  #print(names(data))
+
+
+  return(data)
+
+}
+
+
+#' 写入数据库
+#'
+#' @param file 文件
+#' @param sheet 页签
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_queryAll_writeDB()
+dm_queryAll_writeDB <- function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=tsda::conn_rds('lcrds')) {
+  data <- try(dm_queryAll2(file=file,sheet = sheet,conn=conn))
+  #写入数据库
+  ncount = nrow(data)
+  if(ncount >0)
+  {
+    tsda::db_writeTable(conn=conn,table_name = 't_lcrds_dmInput',r_object = data,append = TRUE)
+  }
+
+
+}
+
+#' 判断是否需要处理
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_need_toDo()
+dmList_need_toDo <- function(conn=tsda::conn_rds('lcrds')){
+  sql <- paste0("select 1 as count
+				   from vw_lcrds_dmInput_toDo2")
+  res <- tsda::sql_select(conn,sql)
+  ncount <- nrow(res)
+  if(ncount >0){
+    info <- TRUE
+  }else{
+    info <- FALSE
+  }
+  return(info)
+}
+
+
+#针对第一次数据，没有进行更新展开，我们后续要处理多级展开的问题
+#' 多次读取待处理的数据
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_toDo_Multi()
+dmList_toDo_Multi <- function(conn=tsda::conn_rds('lcrds')){
+  sql <- paste0("select FDmNo,
+                  FLevel,
+                   FParentRowNo,
+                  FParentItemNo,
+                  FParentItemName,
+                  FParentQty,
+                  FParentChartNo,
+                  FParentGNo,
+                  FParentLNo,
+                   FchartNo2,
+				  FParamG2,
+				   FParamL2
+				   from vw_lcrds_dmInput_toDo2")
+  res <- tsda::sql_select(conn,sql)
+  return(res)
+}
+
+
+#' 更新序号及下级代码，方便后续进行排序查询
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_updateSubRowNo_Multi()
+dmList_updateSubRowNo_Multi <- function(conn=tsda::conn_rds('lcrds')){
+  sql <- paste0("update a set  a.FExtendSeq = b.FExtendSeq,a.fsubRowNo = b.FParentRowNo   from t_lcrds_dminput a
+inner join  vw_lcrds_dmInput_toDo2 b
+on a.FDmNo = b.FDmNo
+and  a.FSubChartNo = b. FchartNo2
+and a.FKeyNo =b. FParamG2
+and a.FLtab =b. FParamL2
+where a.fisdo =0 and a.fextendable =1")
+  res <- tsda::sql_update(conn,sql)
+
+}
+
+
+#' 多次处理相关数据
+#'
+#' @param conn 连接
+#' @param data  处理数据
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_queryAll_Multi()
+dmList_queryAll_Multi <-function(conn=tsda::conn_rds('lcrds'),data){
+  #读取待处理数据
+  #将数据进行隔离，每个只处理一件事项
+  #data <- dmList_toDo_Multi(conn=conn)
+  ncount <- nrow(data)
+  if(ncount >0){
+    res <- lapply(1:ncount, function(i){
+
+      FchartNo =  data[i,"FchartNo2"]
+      FParamG = data[i,"FParamG2"]
+      FParamL = data[i,"FParamL2"]
+      r <- dm_selectDB_detail(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL =FParamL)
+      names(r) <-c('FchartNo2','FParamG2','FParamL2','FItemName','FSubChartNo','FkeyNo','FLtab',
+                   'FItemModel','FNote','FIndexTxt','FQty','FLength','FTotalQty')
+      #读取有限数据行，用于数据复制
+      item <- data[i,1:9]
+      ncount_item <- nrow(r)
+      if(ncount_item >0){
+        item_1 <-tsdo::df_rowRepMulti(item,ncount_item)
+        item_res <- cbind(item_1,r)
+      }else{
+
+        FchartNo2 = FchartNo
+        FParamG2 = FParamG
+        FParamL2 = FParamL
+        FItemName = ""
+        FSubChartNo =""
+        FkeyNo  =""
+        FLtab =""
+        FItemModel =""
+        FNote =""
+        FIndexTxt =""
+        FQty = 0
+        FLength =0
+        FTotalQty = 0
+        item2 <- data.frame(FchartNo2,FParamG2,FParamL2,FItemName,FSubChartNo,FkeyNo,FLtab,
+                            FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,stringsAsFactors = F)
+
+        item_res <- cbind(item,item2)
+
+
+      }
+      return(item_res)
+    })
+    data <- do.call('rbind',res)
+    #针对数据进行判断
+    data$FExtendable <- dm_G_extendable(data$FkeyNo)
+    #完成针对子项的打标数据
+    #针对不需要扩展的字段设置已完成处理
+    data$FIsDo  <-0
+    data$FIsDo[data$FExtendable == 0] <- 1
+
+    data$FExtendSeq <- 0
+    data$FSubRowNo <-data$FParentRowNo
+    #列示所有列名称
+    #print(names(data))
+    #设置已经完成处理数据处理
+
+
+    return(data)
+
+
+  }
+
+}
+
+
+#' 更新数据库，设置已完成
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dbList_setDone()
+dbList_setDone <- function(conn=tsda::conn_rds('lcrds')){
+  sql <- paste0(" update  t_lcrds_dminput  set fisdo =1  where fisdo =0 and fextendable =1")
+  tsda::sql_update(conn,sql)
+
+}
+
+
+dmList_writeDB_Multi <- function(conn=tsda::conn_rds('lcrds'),data) {
+  #data <- try(dm_queryAll2(file=file,sheet = sheet,conn=conn))
+  #
+  #写入数据库
+  ncount = nrow(data)
+  if(ncount >0)
+  {
+    tsda::db_writeTable(conn=conn,table_name = 't_lcrds_dmInput',r_object = data,append = TRUE)
+  }
+
+
+
+}
+
+
+#' 读取DM清单数据
+#'
+#' @param conn  连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_readDB_Input()
+dmList_readDB_Input <- function(conn=tsda::conn_rds('lcrds')){
+  sql <- paste0("select
+
+FDmNo
+      ,FLevel
+      ,FParentRowNo
+      ,FParentItemNo
+      ,FParentItemName
+      ,FParentQty
+      ,FParentChartNo
+      ,FParentGNo
+      ,FParentLNo
+
+,FchartNo2,FParamG2,FParamL2,FItemName,FSubChartNo,FkeyNo,FLtab,
+                            FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty
+from t_lcrds_dmInput
+order by FDmNo,FSubRowNo,FLevel,FIndexTxt")
+  res <- tsda::sql_select(conn,sql)
+}
+
+
+
+
+
+#' 读取DM数据,提供中文名
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_readDB_Input_cn()
+dmList_readDB_Input_cn <- function(conn=tsda::conn_rds('lcrds')){
+
+  data <- dmList_readDB_Input(conn=conn)
+  n1 <-c("DM单号","级数","上级行号","物料号","名称","用量数","图号","G番","L番")
+
+
+  n2 <-c("主图号", "G番号-参数","L番号-参数","子项名称", "分图号","子项件号",
+    "子项L番", "子项规格", "子项备注", "子项序号", "子项基本数量" , "子项长度/系数",
+    "子项总数量")
+  name_all <- c(n1,n2)
+
+  names(data) <- name_all
+  return(data)
+}
+
+
+
+
+#' 针对数据进行处理
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_data_sync()
+dmList_data_sync <- function(conn=tsda::conn_rds('lcrds')){
+  #备份数据
+  sql_bak <- paste0("insert into t_lcrds_dmlistDel
+select * from  t_lcrds_dmlist
+where FDmNo in
+(
+select distinct FDmNo from t_lcrds_dmInput)")
+tsda::sql_update(conn,sql_bak)
+#删除旧的数据
+sql_del <- paste0("delete  from  t_lcrds_dmlist
+where FDmNo in
+(
+select distinct FDmNo from t_lcrds_dmInput)")
+ tsda::sql_update(conn,sql_del)
+ #写入数据
+ sql_ins <- paste0("insert into   t_lcrds_dmlist
+select *  from t_lcrds_dmInput")
+ tsda::sql_update(conn,sql_ins)
+ #删除Input数据
+ sql_input <- paste0("delete  from t_lcrds_dmInput")
+ tsda::sql_update(conn,sql_input)
+
+
+}
+
+
+#' 针对上传的DM清单进行多级展开的入口函数
+#'
+#' @param file 文件
+#' @param sheet 页签
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_Expand_Multi()
+dmList_Expand_Multi <- function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=tsda::conn_rds('lcrds')){
+  #读取数据,针对容错处理
+  #初始化第0，1级展开
+  try(dm_queryAll_writeDB(file = file,sheet = sheet,conn = conn))
+  while (dmList_need_toDo(conn=conn)) {
+    #读取待处理数据
+    data_todo <- dmList_toDo_Multi(conn=conn)
+    #设置子项序号
+    dmList_updateSubRowNo_Multi(conn=conn)
+    #设置数据处理
+    data_done <- dmList_queryAll_Multi(conn = conn,data=data_todo)
+    #设置数据处理已完成
+    dbList_setDone(conn = conn)
+    #写入数据库
+    dmList_writeDB_Multi(conn = conn,data = data_done)
+
+  }
+  #针对数据进行查询
+  #针对数据进行处理
+  data <-dmList_readDB_Input_cn(conn=conn)
+  #迁移进入dmlist及dmlistDel
+  dmList_data_sync(conn=conn)
+  #返回数据
+  return(data)
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
