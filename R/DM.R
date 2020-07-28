@@ -1,3 +1,5 @@
+#0.title-BOM单级展开------
+#1.删除数据库------
 #deal with dm
 
 #' 针对数据进行处理
@@ -23,6 +25,7 @@ select * from t_lcrds_bom  where FchartNo='",FchartNo,"' and FParamG='",FGtab,"'
 
 }
 
+#按图号删除单级BOM--------
 
 #' 按主图号删除数据库
 #'
@@ -45,6 +48,8 @@ select * from t_lcrds_bom  where FchartNo='",FchartNo,"'")
 
 }
 
+#针对上传的图号进行处理-------
+
 #' 针对上传的图号完成处理后设置标志为1
 #'
 #' @param conn 连接
@@ -62,7 +67,7 @@ db_bom_setUpdate <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672')
 }
 
 
-
+#单级BOM的核心逻辑函数------
 #' 更新记录
 #'
 #' @param conn 连接
@@ -85,22 +90,48 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601
     #针对整体数据进行处理
     r$FLength <- 1
     for (i in 1:ncount) {
-      #针对每一行数据进行处理
-      keyNo <- tsdo::na_replace(r[i,'FkeyNo'],'')
+      #针对每一行数据进行处理,
       #针对件号进行处理
+      keyNo <- tsdo::na_replace(r[i,'FkeyNo'],'')
+      #针对件号中的变量进行处理
       if(tsdo::len(keyNo) >0){
         #获取所有的变量变量
         vars <-Ltab_get_uniqueVars(conn = conn,FchartNo = FchartNo)
         if( keyNo %in% vars){
           #需要处理
           length_value <- Ltab_get_varValue(conn = conn,FchartNo = FchartNo,FLtab = FLtab,FkeyNo = keyNo)
-          length_value <- as.numeric(length_value)
-          #针对值进行处理
-          r[i,'FLength'] <- length_value
+          #针对表取数来后，分4种情况情况
+
+          if(is.numeric(as.character(length_value))){
+            #情况1 长度替代
+            length_value <- as.numeric(length_value)
+            #针对值进行处理
+            r[i,'FLength'] <- length_value
+          }else{
+            #情况2 G番替代或者文本替代
+            #针对件号进行处理
+            r[i,'FkeyNo'] <- length_value
+
+          }
+
+
+
+
+
+
+
+
         }
 
       }
-      #针对L翻进行处理
+
+      #针对件号中的常数进行处理
+      if(is.numeric(as.numeric(keyNo))){
+        r[i,'FLength'] <- as.numeric(keyNo)
+
+      }
+
+      #针对L番进行处理
       ltab <-tsdo::na_replace(r[i,'FLtab'],'')
       if(tsdo::len(ltab)){
         vars <-Ltab_get_uniqueVars(conn = conn,FchartNo = FchartNo)
@@ -147,7 +178,9 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601
     r$FParamG <- r$FGtab
     r$FParamL <- FLtab
     #针对空行进行处理,删除空行
+    #针对汇总行也进行相应的处理
     r <- r[!is.na(r$FQty),]
+    r <- r[!is.na(r$FTotalQty),]
     #针对列进行处理
     Gtab_colnames <- names(r)
     Gtab_colNames_sel <- !Gtab_colnames %in% 'FGtab'
@@ -727,6 +760,12 @@ dm_queryAll2 <-function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=ts
   #针对不需要扩展的字段设置已完成处理
   data$FIsDo  <-0
   data$FIsDo[data$FExtendable == 0] <- 1
+  #针对第一次查询,添加相应的上级数据数量
+  data$FTotalQty <-data$FParentQty * data$FTotalQty
+  #针对数据处理处理，针对数量为0也不需要进行展开
+  data$FIsDo[data$FQty == 0] <- 1
+  data$FIsDo[data$FTotalQty == 0] <- 1
+
 
   data$FExtendSeq <- 0
   data$FSubRowNo <-data$FParentRowNo
@@ -785,6 +824,23 @@ dmList_need_toDo <- function(conn=tsda::conn_rds('lcrds')){
 }
 
 
+# 完善针对数据库的修改数量必须大于0---
+
+# alter view vw_lcrds_dmInput_toDo
+# as
+# select
+# FDmNo,                   FLevel+1 as FLevel,                   FParentRowNo,                   FParentItemNo,                   FParentItemName,                   FParentQty,                   FParentChartNo,                   FParentGNo,
+# FParentLNo,                   FSubChartNo as FchartNo2,
+# FKeyNo as FParamG2,
+# FLtab as FParamL2,
+# FIndexTxt,
+# row_number() over (partition by FDmNo,FLevel,FParentRowNo
+#                    order by FDmNo,FLevel,FParentRowNo,FIndexTxt) as FExtendSeq
+# from t_lcrds_dminput where fisdo =0 and fextendable =1   and FQty >0
+
+
+
+
 #针对第一次数据，没有进行更新展开，我们后续要处理多级展开的问题
 #' 多次读取待处理的数据
 #'
@@ -796,6 +852,7 @@ dmList_need_toDo <- function(conn=tsda::conn_rds('lcrds')){
 #' @examples
 #' dmList_toDo_Multi()
 dmList_toDo_Multi <- function(conn=tsda::conn_rds('lcrds')){
+  #添加上一级的TotalQty,用于向下一级传递
   sql <- paste0("select FDmNo,
                   FLevel,
                    FParentRowNo,
@@ -807,13 +864,14 @@ dmList_toDo_Multi <- function(conn=tsda::conn_rds('lcrds')){
                   FParentLNo,
                    FchartNo2,
 				  FParamG2,
-				   FParamL2
+				   FParamL2,
+				   FTotalQty
 				   from vw_lcrds_dmInput_toDo2")
   res <- tsda::sql_select(conn,sql)
   return(res)
 }
 
-
+#check the wherethe is do is found
 #' 更新序号及下级代码，方便后续进行排序查询
 #'
 #' @param conn 连接
@@ -857,9 +915,14 @@ dmList_queryAll_Multi <-function(conn=tsda::conn_rds('lcrds'),data){
       FchartNo =  data[i,"FchartNo2"]
       FParamG = data[i,"FParamG2"]
       FParamL = data[i,"FParamL2"]
+      #上级代入数据
+      FTotalQty_input =data[i,"FTotalQty"]
       r <- dm_selectDB_detail(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL =FParamL)
       names(r) <-c('FchartNo2','FParamG2','FParamL2','FItemName','FSubChartNo','FkeyNo','FLtab',
                    'FItemModel','FNote','FIndexTxt','FQty','FLength','FTotalQty')
+      #应用上级代入数量
+      r$FTotalQty <- r$FTotalQty*FTotalQty_input
+      #针对数据进行处理
       #读取有限数据行，用于数据复制
       item <- data[i,1:9]
       ncount_item <- nrow(r)
@@ -912,7 +975,7 @@ dmList_queryAll_Multi <-function(conn=tsda::conn_rds('lcrds'),data){
 
 }
 
-
+# 针对input处理显得非常重要
 #' 更新数据库，设置已完成
 #'
 #' @param conn 连接
@@ -1038,6 +1101,7 @@ select *  from t_lcrds_dmInput")
 
 }
 
+#多级展开的核心逻辑--------
 
 #' 针对上传的DM清单进行多级展开的入口函数
 #'
@@ -1054,8 +1118,11 @@ dmList_Expand_Multi <- function(file="data-raw/bom_src4.xlsx",sheet = "DM清单"
   #读取数据,针对容错处理
   #初始化第0，1级展开
   try(dm_queryAll_writeDB(file = file,sheet = sheet,conn = conn))
+  #进行多级展开
+  #判断是否需要多级情节
   while (dmList_need_toDo(conn=conn)) {
     #读取待处理数据
+    #设置待处理数据
     data_todo <- dmList_toDo_Multi(conn=conn)
     #设置子项序号
     dmList_updateSubRowNo_Multi(conn=conn)
