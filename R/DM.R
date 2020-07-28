@@ -102,11 +102,19 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601
           length_value <- Ltab_get_varValue(conn = conn,FchartNo = FchartNo,FLtab = FLtab,FkeyNo = keyNo)
           #针对表取数来后，分4种情况情况
 
-          if(is.numeric(as.character(length_value))){
+          if(is.numeric(as.numeric(length_value))){
             #情况1 长度替代
-            length_value <- as.numeric(length_value)
-            #针对值进行处理
-            r[i,'FLength'] <- length_value
+            if(as.numeric(length_value) >0){
+              #真的长度
+              length_value <- as.numeric(length_value)
+              #针对值进行处理
+              r[i,'FLength'] <- length_value
+            }else{
+              #还是序号
+              r[i,'FkeyNo'] <- length_value
+            }
+
+
           }else{
             #情况2 G番替代或者文本替代
             #针对件号进行处理
