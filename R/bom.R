@@ -65,18 +65,18 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
   sql <- paste0("select FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FGtab  from t_lcrds_gtab where FchartNo ='",FchartNo,"'")
   #读取数据,其中r表示G表
   r <- tsda::sql_select(conn,sql)
-  print('1')
-  print(r[r$FIndexTxt =='-13',])
+  # print('1')
+  # print(r[r$FIndexTxt =='-13',])
   ncount <- nrow(r)
   if(ncount>0){
     #针对整体数据进行处理
     r$FLength <- 1
     for (i in 1:ncount) {
 
-      if(r[i,'FIndexTxt'] =='-13'){
-        print('2')
-        print(r[i,'FIndexTxt'])
-      }
+      # if(r[i,'FIndexTxt'] =='-13'){
+      #   print('2')
+      #   print(r[i,'FIndexTxt'])
+      # }
 
 
       #针对每一行数据进行处理,
@@ -183,10 +183,10 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
       #   r[i,'FLength'] <- as.numeric(keyNo)
       #
       # }
-        if(r[i,'FIndexTxt'] =='-13'){
-          print('3')
-          print(r[i,'FIndexTxt'])
-        }
+        # if(r[i,'FIndexTxt'] =='-13'){
+        #   print('3')
+        #   print(r[i,'FIndexTxt'])
+        # }
 
 
       #针对L番进行处理
@@ -204,10 +204,10 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
         }
 
       }
-      if(r[i,'FIndexTxt'] =='-13'){
-        print('4')
-        print(r[i,'FIndexTxt'])
-      }
+      # if(r[i,'FIndexTxt'] =='-13'){
+      #   print('4')
+      #   print(r[i,'FIndexTxt'])
+      # }
 
       #针对数量进行处理
       fqty <- tsdo::na_replace(r[i,'FQty'],"")
@@ -224,36 +224,36 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
         }
 
       }
-      if(r[i,'FIndexTxt'] =='-13'){
-        print('5')
-        print(r[i,'FIndexTxt'])
-      }
+      # if(r[i,'FIndexTxt'] =='-13'){
+      #   print('5')
+      #   print(r[i,'FIndexTxt'])
+      # }
 
 
 
 
 
     }
-    print('6')
-    print(r[r$FIndexTxt =='-13',])
+    # print('6')
+    # print(r[r$FIndexTxt =='-13',])
     #数据已经处理完了
     r$FQty <- as.numeric(r$FQty)
     r$FLength <- as.numeric(r$FLength)
-    print('7')
-    print(r[r$FIndexTxt =='-13',])
+    # print('7')
+    # print(r[r$FIndexTxt =='-13',])
     #针对数据处理处理,其中数量的na给予0处理
     r$FQty <- tsdo::na_replace(r$FQty,0)
     r$FLength <- tsdo::na_replace(r$FLength,0)
-    print('8')
-    print(r[r$FIndexTxt =='-13',])
+    # print('8')
+    # print(r[r$FIndexTxt =='-13',])
 
     r$FTotalQty <- r$FQty * r$FLength
-    print('9')
-    print(r[r$FIndexTxt =='-13',])
+    # print('9')
+    # print(r[r$FIndexTxt =='-13',])
     r$FParamG <- r$FGtab
     r$FParamL <- FLtab
-    print('10')
-    print(r[r$FIndexTxt =='-13',])
+    # print('10')
+    # print(r[r$FIndexTxt =='-13',])
     #针对空行进行处理,删除空行
     #针对汇总行也进行相应的处理
 
@@ -266,8 +266,8 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
     #针对列进行处理
     Gtab_colnames <- names(r)
     Gtab_colNames_sel <- !Gtab_colnames %in% 'FGtab'
-    print('11')
-    print(r[r$FIndexTxt =='-13',])
+    # print('11')
+    # print(r[r$FIndexTxt =='-13',])
     r <- r[ ,Gtab_colNames_sel]
 
   }else{
