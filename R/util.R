@@ -104,3 +104,29 @@ bom_getVarValueType <- function(value){
 
   return(type)
 }
+
+
+#' 针对字符串进行处理
+#'
+#' @param x 字符串
+#' @param sep 分离符
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' sql_Ltab()
+sql_Ltab <- function(x,sep=',') {
+  x = tsdo::na_replace(x,'')
+  if(x == ''){
+    res = x
+  }else{
+    r_list =strsplit(x,sep)
+    #针对数据进行打碎
+    data = r_list[[1]]
+    res = paste("'",data,"'",sep="",collapse = ',')
+
+  }
+  return(res)
+
+}
