@@ -130,3 +130,41 @@ sql_Ltab <- function(x,sep=',') {
   return(res)
 
 }
+
+
+#' 分页设置
+#'
+#' @param totalRow  总行数
+#' @param pageRow 每页行数
+#'
+#' @return 返回列表
+#' @export
+#'
+#' @examples
+#' page_setting()
+page_setting <- function(totalRow=14,pageRow=4) {
+  page_count <- totalRow %/% pageRow
+  #取模数
+  tail_row <- totalRow %% pageRow
+  #取余数
+  tail_count <- 0
+  if(tail_row >0){
+    tail_count <- 1
+
+  }
+  total_count <-page_count+tail_count
+  res <- tsdo::list_init(total_count)
+  for (i in 1:page_count) {
+    res[[i]] <- 1:pageRow+(i-1)*pageRow
+
+  }
+
+  if(tail_count >0){
+    res[[total_count]] <- 1:tail_row + pageRow*page_count
+  }
+
+  return(res)
+}
+
+
+

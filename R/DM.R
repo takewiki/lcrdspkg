@@ -16,6 +16,7 @@
 dm_ReadBy_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672'){
   FLtabs <-Ltab_get_uniqueMembers(conn,FchartNo)
   raw <- lapply(FLtabs, function(FLtab){
+    print(FLtab)
     res <- dm_ReadBy_ChartNo_Ltab(conn=conn,FchartNo = FchartNo,FLtab = FLtab)
     return(res)
   })
@@ -38,15 +39,35 @@ dm_ReadBy_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672'
 dm_writeDB_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672'){
    data <- dm_ReadBy_ChartNo(conn=conn,FchartNo = FchartNo)
    #删除要备份的数据
+   print('step01')
    try({
      dm_chartNo_deleteDB(conn=conn,FchartNo = FchartNo)
    })
+   print('step02')
 
    #插入新的数据
    #tsda::upload_data(conn,'t_lcrds_bom',data)
    #不做判断,直接写入数据
    #这个地方可能是性能出现问题的重点
-   tsda::db_writeTable(conn=conn,table_name = 't_lcrds_bom',r_object = data,append = T)
+   print('testDB')
+   #增加分页处理
+   #data =data[1:10, ]
+   totalRow <- nrow(data)
+   if(totalRow <=1000){
+     pageRow = totalRow
+
+   }else{
+     pageRow=1000
+   }
+
+   pages = page_setting(totalRow,pageRow)
+   lapply(pages, function(page){
+     item =  data[page, ]
+     tsda::db_writeTable(conn=conn,table_name = 't_lcrds_bom',r_object = item,append = T)
+     print('step03')
+   })
+
+
 
 
 
@@ -341,10 +362,13 @@ dm_dealAll2 <- function(conn=tsda::conn_rds('lcrds'),show_process=FALSE) {
       for (FchartNo in chartNos) {
 
         #写入数据
+        print('step04')
         dm_writeDB_ChartNo(conn=conn,FchartNo = FchartNo)
+        print('step05')
 
         #更新记录
         db_bom_setUpdate(conn,FchartNo)
+        print('step06')
 
 
       }

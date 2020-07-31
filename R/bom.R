@@ -261,8 +261,8 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
     # r <- r[!is.na(r$FTotalQty),]
      r <- r[r$FQty  > 0 , ]
      r <- r[r$FTotalQty > 0 , ]
-     print('10')
-     print(r[r$FIndexTxt =='-13',])
+     # print('10')
+     # print(r[r$FIndexTxt =='-13',])
     #针对列进行处理
     Gtab_colnames <- names(r)
     Gtab_colNames_sel <- !Gtab_colnames %in% 'FGtab'

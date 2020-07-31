@@ -63,3 +63,14 @@ View(mydata2)
 
 
 mydata2[mydata2$FIndexTxt=='-13',]
+
+
+
+dm_dealAll2()
+
+
+
+
+data <- dm_ReadBy_ChartNo(FchartNo ='YX200A714' )
+
+View(data)
