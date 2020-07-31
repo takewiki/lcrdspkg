@@ -295,6 +295,7 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
 #' dm_selectDB_detail2()
 dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='YX200A714', FParamG ='GS11'  , FParamL ='') {
   #针对数据符号SQL格式
+  lInput = FParamL
   FParamL = sql_Ltab(FParamL)
 
   if(FParamL == ''){
@@ -338,9 +339,43 @@ order by FIndexTxt")
   res <- tsda::sql_select(conn,sql)
   res <- res[ ,c('FchartNo','FParamG','FParamL','FItemName','FSubChartNo','FkeyNo','FLtab','FItemModel',
                  'FNote','FIndexTxt','FQty','FLength','FTotalQty')]
-  names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
+  res$FParamL <- lInput
+
+  res2 <- split(res,res$FIndexTxt)
+  #处理重复的情况
+
+  raw <-lapply(res2, function(data){
+    ncount = nrow(data)
+    if(ncount >1){
+      find = 0
+      for (i in 1:ncount) {
+        value =  data[i,'FkeyNo']
+        print(value)
+
+        type = bom_getVarValueType(value)
+        if(type =='G' |type =='seq'){
+          info = data[i,]
+          find =1
+          print(info)
+        }
+
+      }
+      if(find == 0){
+        info = data[1,]
+        print(info)
+      }
+
+
+    }else{
+      info <- data
+    }
+    return(info)
+  })
+  res3 = do.call('rbind',raw)
+
+  names(res3) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
                  '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
-  return(res)
+  return(res3)
 
 
 }
