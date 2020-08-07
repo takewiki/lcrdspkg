@@ -40,3 +40,19 @@ View(dm2)
 
 dm_writeDB_ChartNo(FchartNo = 'YE604B797')
 
+
+
+
+library(lcrdspkg)
+mydata3 <-dm_selectDB_detail(FchartNo = 'YE500A838-S01',FParamG = 'G03',FParamL = NA)
+View(mydata3)
+
+
+mydata5 <-dm_queryAll()
+
+View(mydata5)
+
+
+
+
+

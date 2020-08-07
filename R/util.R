@@ -40,7 +40,7 @@ bom_getKeyNoType <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A714',k
   }
   if(is.numeric(as.numeric(keyNo)) & find == 0){
 
-
+    print(keyNo)
     if(as.numeric(keyNo) >=0){
       type='fixed'
       find =1

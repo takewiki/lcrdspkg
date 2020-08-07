@@ -400,11 +400,15 @@ dm_dealAll2 <- function(conn=tsda::conn_rds('lcrds'),show_process=FALSE) {
 #' dm_selectDB_detail()
 dm_selectDB_detail <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='P235009B198', FParamG ='G11'  , FParamL ='L42') {
 
+  #针对NA做兼容性处理
+  # if (FParamL == ''){
+  #   FParamL <- NA
+  # }
   if(is.na(FParamL)){
-    sql <- paste0("select
+    sql <- paste0("select distinct
 FchartNo 主图号
 ,FParamG [G番号-参数]
-,FParamL [L番号-参数]
+,'' as  [L番号-参数]
 ,FItemName 子项名称
 ,FSubChartNo 分图号
 ,FkeyNo 子项件号
@@ -487,6 +491,7 @@ dm_queryAll <-function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=tsd
       FchartNo =  data[i,"图号"]
       FParamG = data[i,"G番"]
       FParamL = data[i,"L番"]
+      print(FParamL)
       r <- dm_selectDB_detail(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL =FParamL)
       ncount_item <- nrow(r)
       if(ncount_item >0){
