@@ -492,7 +492,15 @@ dm_queryAll <-function(file="data-raw/bom_src4.xlsx",sheet = "DM清单",conn=tsd
       FParamG = data[i,"G番"]
       FParamL = data[i,"L番"]
       print(FParamL)
-      r <- dm_selectDB_detail(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL =FParamL)
+      #仅仅支持单个L类番进行查询
+      #r <- dm_selectDB_detail(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL =FParamL)
+      #用于支持多个L番进行进行
+      print('start of multiple L query')
+      print(FchartNo)
+      print(FParamG)
+      print(FParamL)
+      r <- dm_selectDB_detail2(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL =FParamL)
+      print(r)
       ncount_item <- nrow(r)
       if(ncount_item >0){
         item_1 <-tsdo::df_rowRepMulti(item,ncount_item)
@@ -979,8 +987,6 @@ dmList_Expand_Multi <- function(file="data-raw/bom_src4.xlsx",sheet = "DM清单"
 
 
 }
-
-
 
 
 

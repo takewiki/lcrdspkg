@@ -281,7 +281,7 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
 }
 
 
-#' 查询信息
+#' BOM查询多L番
 #'
 #' @param conn 连接
 #' @param FchartNo 主图号
@@ -337,41 +337,65 @@ order by FIndexTxt")
 
 
   res <- tsda::sql_select(conn,sql)
-  res <- res[ ,c('FchartNo','FParamG','FParamL','FItemName','FSubChartNo','FkeyNo','FLtab','FItemModel',
-                 'FNote','FIndexTxt','FQty','FLength','FTotalQty')]
-  res$FParamL <- lInput
+  #针对数据进行处理
+  ncount <- nrow(res)
+  if(ncount >0){
+    #针对有数据的情况
+    res <- res[ ,c('FchartNo','FParamG','FParamL','FItemName','FSubChartNo','FkeyNo','FLtab','FItemModel',
+                   'FNote','FIndexTxt','FQty','FLength','FTotalQty')]
+    res$FParamL <- lInput
 
-  res2 <- split(res,res$FIndexTxt)
-  #处理重复的情况
+    res2 <- split(res,res$FIndexTxt)
+    #处理重复的情况
 
-  raw <-lapply(res2, function(data){
-    ncount = nrow(data)
-    if(ncount >1){
-      find = 0
-      for (i in 1:ncount) {
-        value =  data[i,'FkeyNo']
-        print(value)
+    raw <-lapply(res2, function(data){
+      ncount = nrow(data)
+      if(ncount >1){
+        find = 0
+        for (i in 1:ncount) {
+          value =  data[i,'FkeyNo']
+          print(value)
 
-        type = bom_getVarValueType(value)
-        if(type =='G' |type =='seq'){
-          info = data[i,]
-          find =1
+          type = bom_getVarValueType(value)
+          if(type =='G' |type =='seq'){
+            info = data[i,]
+            find =1
+            print(info)
+          }
+
+        }
+        if(find == 0){
+          info = data[1,]
           print(info)
         }
 
-      }
-      if(find == 0){
-        info = data[1,]
-        print(info)
-      }
 
+      }else{
+        info <- data
+      }
+      return(info)
+    })
+    res3 = do.call('rbind',raw)
+  }else{
+    #针对没有数据的情况
+    FchartNo2 = FchartNo
+    FParamG2 = FParamG
+    FParamL2 = FParamL
+    FItemName = ""
+    FSubChartNo =""
+    FkeyNo  =""
+    FLtab =""
+    FItemModel =""
+    FNote =""
+    FIndexTxt =""
+    FQty = 0
+    FLength =0
+    FTotalQty = 0
+    res3 <- data.frame(FchartNo2,FParamG2,FParamL2,FItemName,FSubChartNo,FkeyNo,FLtab,
+                        FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,stringsAsFactors = F)
 
-    }else{
-      info <- data
-    }
-    return(info)
-  })
-  res3 = do.call('rbind',raw)
+  }
+
 
   names(res3) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
                  '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')

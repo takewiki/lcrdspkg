@@ -2,7 +2,7 @@
 % Please edit documentation in R/bom.R
 \name{dm_selectDB_detail2}
 \alias{dm_selectDB_detail2}
-\title{查询信息}
+\title{BOM查询多L番}
 \usage{
 dm_selectDB_detail2(
   conn = tsda::conn_rds("lcrds"),
@@ -24,7 +24,7 @@ dm_selectDB_detail2(
 返回值
 }
 \description{
-查询信息
+BOM查询多L番
 }
 \examples{
 dm_selectDB_detail2()
