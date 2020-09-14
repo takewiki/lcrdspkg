@@ -407,4 +407,156 @@ order by FIndexTxt")
 
 
 
+#' 针对图号进行查询，兼容DM清单结果
+#'
+#' @param conn 连接
+#' @param FchartNo 图号
+#' @param FParamG G番
+#' @param FParamL L番
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_selectDB_detail_combo1()
+dm_selectDB_detail_combo1 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='YX200A714', FParamG ='GS11'  , FParamL ='') {
+  #针对数据符号SQL格式
+  lInput = FParamL
+  FParamL = sql_Ltab(FParamL)
+
+  if(FParamL == ''){
+    sql <- paste0("select
+FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG,
+FParamL = (
+        stuff(
+            (select ',' + FParamL from t_lcrds_bom where FchartNo = A.FchartNo
+			and FIndexTxt = A.FIndexTxt  and FParamG =A.FParamG   for xml path('')),
+            1,
+            1,
+            ''
+        )
+    )
+from t_lcrds_bom as A
+where FchartNo ='",FchartNo,"'
+and A.FParamG ='",FParamG,"'
+group by FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG
+order by FIndexTxt")
+  }else{
+    sql <- paste0("select
+FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG,
+FParamL = (
+  stuff(
+    (select ',' + FParamL from t_lcrds_bom where FchartNo = A.FchartNo
+     and FIndexTxt = A.FIndexTxt  and FParamG =A.FParamG and FParamL in (",FParamL,")   for xml path('')),
+    1,
+    1,
+    ''
+  )
+)
+from t_lcrds_bom as A
+where FchartNo ='",FchartNo,"'
+and A.FParamG ='",FParamG,"'
+and A.FParamL in (",FParamL,")
+group by FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG
+order by FIndexTxt")
+  }
+
+
+  res <- tsda::sql_select(conn,sql)
+  #针对数据进行处理
+  ncount <- nrow(res)
+  if(ncount >0){
+    #针对有数据的情况
+    res <- res[ ,c('FchartNo','FParamG','FParamL','FItemName','FSubChartNo','FkeyNo','FLtab','FItemModel',
+                   'FNote','FIndexTxt','FQty','FLength','FTotalQty')]
+    res$FParamL <- lInput
+
+    res2 <- split(res,res$FIndexTxt)
+    #处理重复的情况
+
+    raw <-lapply(res2, function(data){
+      ncount = nrow(data)
+      if(ncount >1){
+        find = 0
+        for (i in 1:ncount) {
+          value =  data[i,'FkeyNo']
+          print(value)
+
+          type = bom_getVarValueType(value)
+          if(type =='G' |type =='seq'){
+            info = data[i,]
+            find =1
+            print(info)
+          }
+
+        }
+        if(find == 0){
+          info = data[1,]
+          print(info)
+        }
+
+
+      }else{
+        info <- data
+      }
+      return(info)
+    })
+    res3 = do.call('rbind',raw)
+  }else{
+    #针对没有数据的情况
+    FchartNo2 = FchartNo
+    FParamG2 = FParamG
+    FParamL2 = FParamL
+    FItemName = ""
+    FSubChartNo =""
+    FkeyNo  =""
+    FLtab =""
+    FItemModel =""
+    FNote =""
+    FIndexTxt =""
+    FQty = 0
+    FLength =0
+    FTotalQty = 0
+    res3 <- data.frame(FchartNo2,FParamG2,FParamL2,FItemName,FSubChartNo,FkeyNo,FLtab,
+                       FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,stringsAsFactors = F)
+
+  }
+
+
+  ncount_combo1 <- nrow(res3)
+  FDmNo1 = rep('',ncount_combo1)
+  FLevel1 = rep(0,ncount_combo1)
+  FParentRow1 = rep("",ncount_combo1)
+  FParentItemNo1 = rep('',ncount_combo1)
+  FParentItemName1 = rep('',ncount_combo1)
+  FParentQty1 = rep(0,ncount_combo1)
+  FParentChartNo1 = rep('',ncount_combo1)
+  FParentChartG1 = rep('',ncount_combo1)
+  FParentChartL1 = rep('',ncount_combo1)
+
+  data_combo1 <- data.frame(
+    FDmNo1,FLevel1,FParentRow1,FParentItemNo1,FParentItemName1,FParentQty1,FParentChartNo1,FParentChartG1,FParentChartL1,stringsAsFactors = F
+
+
+  )
+
+  res4 <-cbind(data_combo1,res3)
+
+  n1 <-c("DM单号","级数","上级行号","物料号","名称","用量数","图号","G番","L番")
+
+
+  n2 <-c("主图号", "G番号-参数","L番号-参数","子项名称", "分图号","子项件号",
+         "子项L番", "子项规格", "子项备注", "子项序号", "子项基本数量" , "子项长度/系数",
+         "子项总数量")
+  name_all <- c(n1,n2)
+
+  names(res4) <- name_all
+  return(res4)
+
+
+}
+
+
+
+
 
