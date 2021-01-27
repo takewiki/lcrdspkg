@@ -81,13 +81,14 @@ soNote_read <- function(file='data-raw/订单备注模板.xlsx'){
 #'
 #' @param file 文件名
 #' @param conn 连接
+#' @param table_name 表名
 #'
 #' @return 返回值
 #' @export
 #'
 #' @examples
 #' soNote_uploadDB()
-soNote_uploadDB <- function(file='data-raw/订单备注模板.xlsx',conn=tsda::conn_rds('lcrds')) {
+soNote_uploadDB <- function(file='data-raw/订单备注模板.xlsx',table_name='t_lcrds_soNote',conn=tsda::conn_rds('lcrds')) {
   data <- soNote_read(file = file)
 
   ncount <- nrow(data)
@@ -96,9 +97,60 @@ soNote_uploadDB <- function(file='data-raw/订单备注模板.xlsx',conn=tsda::c
     data$FFlag[data$FFlag == TRUE] <- 1
     data$FFlag[data$FFlag == FALSE] <-0
     #add the try
-    try(tsda::upload_data(conn = conn,table_name = 't_lcrds_soNote',data = data))
+    try(tsda::upload_data(conn = conn,table_name = table_name,data = data))
   }
 
+
+}
+
+
+#' 获取运算单最大号
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' soNote_getMaxCalcNo()
+soNote_getMaxCalcNo <- function(conn=tsda::conn_rds('lcrds')) {
+  sql <- paste0(" select isnull(max(FCalcNo),0) as  FCalcNo  from  v_lcrds_soNoteQuery")
+  r <- tsda::sql_select(conn,sql)
+  res <- r$FCalcNo
+  return(res)
+
+}
+
+
+#' 订单备注信息视图查询----
+#'
+#' @param conn  连接
+#' @param FSoNo1 开始外部订单号
+#' @param FSoNo2 结束外部订单号
+#' @param FCalcNo 运算号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' soNote_view_query()
+soNote_view_query <- function(conn=tsda::conn_rds('lcrds'),FSoNo1 ='117583137' ,FSoNo2 ='117583139',FCalcNo = soNote_getMaxCalcNo()) {
+  sql <- paste0("  SELECT  [FSoNo] 外部订单号
+      ,[FChartNo] 订单图号
+      ,[FBarcode] 外部条码
+      ,[FNote]   订单备注
+      ,[FCalcNo]  运算单号
+      ,[FNote_Tech] 技术备注
+      ,[FChartNo_112] 图号112
+      ,[FContact]  合同号
+      ,[FchartNo_Tech] 图号_技术部
+      ,[FFlag_112] 是否112
+      ,[FNote_Mfg] 备注_生产
+  FROM [lcrds].[dbo].[v_lcrds_soNoteQuery]
+  where FSoNo >='",FSoNo1,"' and FSoNo<='",FSoNo2,"'
+  and FCalcNo =  ",FCalcNo)
+  res <- tsda::sql_select(conn,sql)
+  return(res)
 
 }
 

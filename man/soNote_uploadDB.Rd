@@ -6,11 +6,14 @@
 \usage{
 soNote_uploadDB(
   file = "data-raw/订单备注模板.xlsx",
+  table_name = "t_lcrds_soNote",
   conn = tsda::conn_rds("lcrds")
 )
 }
 \arguments{
 \item{file}{文件名}
+
+\item{table_name}{表名}
 
 \item{conn}{连接}
 }
