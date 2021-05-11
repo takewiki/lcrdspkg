@@ -110,3 +110,21 @@ barCode_ban_rm <- function(file="data-raw/条码隔离区下载模板.xlsx",conn
 
 }
 
+
+
+
+#' 查询已经被禁用的条码
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' barcode_banned_query()
+barcode_banned_query <- function(conn=tsda::conn_rds('LCERP')) {
+  sql <- paste0(" select FBarcode,FChartNumber  from  rds_barcode_banned_deleted")
+  res <- tsda::sql_select(conn,sql)
+  return(res)
+
+}
