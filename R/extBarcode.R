@@ -187,4 +187,72 @@ extBarcode_query_NoteALL <- function(conn=tsda::conn_rds('lcrds')) {
 }
 
 
+#' 获取当前计算号的信息
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' extBarcode_getNoteCount_currentCalc()
+extBarcode_getNoteCount_currentCalc <- function(conn=tsda::conn_rds('lcrds')) {
+  #获取当前最大号
+  calcNo <-extBarcode_MaxCalcNo(conn=conn)
+
+  sql <- paste0("  select FChartNo,isnull(FNote_All,'') as FNote_All ,count(1) AS FNoteCount from v_lcrds_soNoteQueryAll
+
+  where FCalcNo =  ",calcNo,"
+   group by FChartNo,isnull(FNote_All,'')")
+  res <- tsda::sql_select(conn,sql)
+  return(res)
+
+}
+
+
+#' 查询未分配记录
+#'
+#' @param conn 连接
+#' @param FCalcNo 计算次数
+#' @param FChartNo 图号
+#' @param FNote_All 备注
+#' @param n 数量
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' exrBarcode_getUnAllocated()
+exrBarcode_getUnAllocated <- function(conn=tsda::conn_rds('lcrds'),
+                                      FCalcNo=11,
+                                      FChartNo='P207012C134G01',
+                                      FNote_All='G116*G103,G116,G107*G110,G363*G168,',
+                                      n=4) {
+
+  sql <- paste0("
+    select   top  ",n,"  FSoNo ,FChartNo,FNote_All as FNote,FBarcode  as FBarcode_ext  from v_lcrds_soNoteQueryAll
+
+  where FCalcNo =  ",FCalcNo," and FChartNo ='",FChartNo,"' and FNote_All='",FNote_All,"'
+  order by FChartNo,FNote_All,FBarcode")
+
+  res <- tsda::sql_select(conn,sql)
+  ncount <- nrow(res)
+  if(ncount >0)
+  {
+    res$FCalcNo = FCalcNo
+  } else{
+    res<- NULL
+  }
+  return(res)
+
+}
+
+
+
+
+
+
+
+
+
 

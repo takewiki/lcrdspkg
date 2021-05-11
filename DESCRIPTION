@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 2.3.0
+Version: 2.4.0
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: More about what it does (maybe more than one line)
@@ -25,5 +25,6 @@ Collate:
     'intBarCode.R'
     'readXlsx.R'
     'soNote.R'
+    'sql_createTable.R'
     'upload.R'
     'util.R'
