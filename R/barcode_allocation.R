@@ -14,24 +14,32 @@
 #' @examples
 #' extBacode_Allocate_ByEachNote()
 extBarcode_Allocate_ByEachNote <- function(conn_rds=tsda::conn_rds('lcrds'),
-                                      conn_erp=tsda::conn_rds('LCERP'),
+                                      conn_erp=tsda::conn_rds('LCERP2'),
                                       FCalcNo=11,
                                       FChartNo='P207012C134G01',
                                       FNote_All='G116*G103,G116,G107*G110,G363*G168,',
                                       n=4) {
 
 data_ext <-exrBarcode_getUnAllocated(conn = conn_rds,FCalcNo = FCalcNo,FChartNo = FChartNo,FNote_All = FNote_All,n = n)
-#print(data_ext)
+print('step 1')
+print(data_ext)
 ncount_ext <- nrow(data_ext)
 data_inner <-barcodeInner_getUnAllocated(conn = conn_erp,FChartNo = FChartNo,FNote_ERP = FNote_All,n = n)
-#print(data_inner)
+print('step 2')
+print(FNote_All == '503-标配整合,G103,G108/G110/G407,G363*G168,')
+print(n == 1)
+print(n == 4)
+print(FChartNo)
+print(data_inner)
 ncount_inner <- nrow(data_inner)
 if ((ncount_ext >0) &( ncount_inner >0)){
   res <- tsdo::allocate(data_ext,data_inner)
-  #print(res)
+  print('step3')
+  print(res)
   ncount <- nrow(res)
   if (ncount >0){
     res <- res[,c("FSoNo", "FChartNo","FNote" , "FBarcode_ext","FBarcode_inner",   "FCalcNo" )]
+
     try(tsda::upload_data(conn = conn_erp,table_name = 'takewiki_barcode_allocate_auto',data = res))
   }
 
@@ -57,7 +65,7 @@ return(res)
 #' @examples
 #' extBarcode_AllocateALL()
 extBarcode_AllocateALL <-function(conn_rds=tsda::conn_rds('lcrds'),
-                                  conn_erp=tsda::conn_rds('LCERP')
+                                  conn_erp=tsda::conn_rds('LCERP2')
                                  ){
   data <-extBarcode_getNoteCount_currentCalc(conn=conn_rds)
   print(data)
@@ -66,9 +74,11 @@ extBarcode_AllocateALL <-function(conn_rds=tsda::conn_rds('lcrds'),
   calcNo <-extBarcode_MaxCalcNo(conn=conn_rds)
   if(ncount >0){
     lapply(1:ncount, function(i){
+      print(paste0('charpter',i))
+      # fix the bug
       try({
         extBarcode_Allocate_ByEachNote(conn_rds = conn_rds,conn_erp = conn_erp,FCalcNo = calcNo,
-                                       FChartNo = data$FChartNo[i],FNote_All = data$FNote_All[i],n = data$FNoteCount)
+                                       FChartNo = data$FChartNo[i],FNote_All = data$FNote_All[i],n = data$FNoteCount[i])
       })
 
 

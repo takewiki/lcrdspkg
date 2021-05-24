@@ -6,7 +6,7 @@
 \usage{
 extBarcode_Allocate_ByEachNote(
   conn_rds = tsda::conn_rds("lcrds"),
-  conn_erp = tsda::conn_rds("LCERP"),
+  conn_erp = tsda::conn_rds("LCERP2"),
   FCalcNo = 11,
   FChartNo = "P207012C134G01",
   FNote_All = "G116*G103,G116,G107*G110,G363*G168,",

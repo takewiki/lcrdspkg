@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 2.4.1
+Version: 2.4.2
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: More about what it does (maybe more than one line)
