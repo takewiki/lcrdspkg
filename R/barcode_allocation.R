@@ -107,8 +107,9 @@ extBarcode_AllocateResult <-function(conn_rds=tsda::conn_rds('lcrds'),
 {
   #获取最大号
   calcNo <-extBarcode_MaxCalcNo(conn=conn_rds)
+  # 添加排序规则
   sql <- paste0(" select FSoNo,FChartNo,FBarcode_ext,FBarcode_inner,FNote from takewiki_barcode_allocate_auto
- where FCalcNo = ",  calcNo)
+ where FCalcNo = ",  calcNo  ,"    order by FSoNo,FBarcode_ext,FBarcode_inner   ")
   res <- tsda::sql_select(conn = conn_erp,sql)
 
   names(res) <-c('销售订单号','图号','外部二维码','内部二维码','订单信息备注')
