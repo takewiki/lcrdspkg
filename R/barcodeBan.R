@@ -79,6 +79,7 @@ barCode_ban_add <- function(file="data-raw/条码隔离区下载模板.xlsx",con
   ncount <- nrow(data)
   if (ncount >0){
     data$FDeleted <- rep(1,ncount)
+    data$FDate <-rep(as.character(Sys.Date()),ncount)
     #更新数据
     barcode_ban_updateDB(conn,data)
   }
@@ -103,6 +104,7 @@ barCode_ban_rm <- function(file="data-raw/条码隔离区下载模板.xlsx",conn
   ncount <- nrow(data)
   if (ncount >0){
     data$FDeleted <- rep(0,ncount)
+    data$FDate <-rep(as.character(Sys.Date()),ncount)
     #更新数据
     barcode_ban_updateDB(conn,data)
   }
@@ -125,6 +127,47 @@ barCode_ban_rm <- function(file="data-raw/条码隔离区下载模板.xlsx",conn
 barcode_banned_query <- function(conn=tsda::conn_rds('LCERP')) {
   sql <- paste0(" select FBarcode,FChartNumber  from  rds_barcode_banned_deleted")
   res <- tsda::sql_select(conn,sql)
+  return(res)
+
+}
+
+
+
+
+
+#' 查询已经被禁用的条码
+#'
+#' @param conn 连接
+#' @param FStartDate 开始日期
+#' @param FEndDate  结束日志
+#' @param FChartNumber 图号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' barcode_banned_query()
+barcode_banned_query2 <- function(conn=tsda::conn_rds('LCERP2'),
+                                 FStartDate='2021-01-01',
+                                 FEndDate='9999-12-31',
+                                 FChartNumber ='YX201B497-02'
+                                 ) {
+
+  if (FChartNumber == ''){
+    sql <- paste0("select * from  rds_barcode_banned
+where FDate >= '",FStartDate,"' and FDate <='",FEndDate,"'
+and FDeleted =1 ")
+  }else{
+    sql <- paste0("select * from  rds_barcode_banned
+where FDate >= '",FStartDate,"' and FDate <='",FEndDate,"'
+and FDeleted =1 and FChartNumber ='",FChartNumber,"'")
+  }
+
+  res <- tsda::sql_select(conn,sql)
+  ncount = nrow(res)
+  if(ncount >0){
+    names(res) <- c('内部二维码','图号','禁用标记','禁用日期')
+  }
   return(res)
 
 }
