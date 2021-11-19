@@ -6,7 +6,7 @@
 \usage{
 extBarcode_AllocateResult(
   conn_rds = tsda::conn_rds("lcrds"),
-  conn_erp = tsda::conn_rds("LCERP")
+  conn_erp = tsda::conn_rds("LCERP2")
 )
 }
 \arguments{
