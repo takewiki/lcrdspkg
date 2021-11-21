@@ -6,11 +6,12 @@
 #' @examples
 #'soNote_data()
 soNote_data <- function() {
+  FPrdName <-c('123','124','125')
   FContact <-c('A','A','B')
   FSoNo <- c('123','123','456')
   FChartNo <- c('P203031A112123','P203031A112543','abc')
   FNote <-c('123','123','')
-  res <-data.frame(FContact,FSoNo,FChartNo,FNote,stringsAsFactors = FALSE)
+  res <-data.frame(FPrdName,FContact,FSoNo,FChartNo,FNote,stringsAsFactors = FALSE)
   return(res)
 
 }
@@ -24,7 +25,7 @@ soNote_data <- function() {
 #' soNote_data_tpl()
 soNote_data_tpl <- function() {
   data <- soNote_data()
-  names(data) <- c('合同号','订单号','图号','备注')
+  names(data) <- c('品名','合同号','订单号','图号','备注')
   res <- list(data)
   names(res) <-'订单备注'
   return(res)
@@ -69,10 +70,10 @@ soNote_read <- function(file='data-raw/订单备注模板.xlsx'){
   library(readxl)
   data_raw <- read_excel(file,sheet = "订单备注")
   data_raw <- as.data.frame(data_raw)
-  field_sel <-c('合同号','订单号','图号','备注')
+  field_sel <-c('合同号','订单号','图号','备注','品名')
   data <- data_raw[,field_sel]
   res <- soNote_flag(data = data,field_main = '图号',key='P203031A112')
-  names(res) <-c('合同号','订单号','图号','备注','标记','复核')
+  names(res) <-c('合同号','订单号','图号','备注','品名','标记','复核')
   return(res)
 
 }
@@ -93,7 +94,10 @@ soNote_uploadDB <- function(file='data-raw/订单备注模板.xlsx',table_name='
 
   ncount <- nrow(data)
   if(ncount >0){
-    names(data) <- c('FContact','FSoNo','FChartNo','FNote','FFlag','FComfirmed')
+    names(data) <- c('FContact','FSoNo','FChartNo','FNote','FPrdName','FFlag','FComfirmed')
+    data = data[ ,c('FContact','FSoNo','FChartNo','FNote','FFlag','FComfirmed','FPrdName')]
+    #针对数据类型进行转化,尤其是品名
+    data$FPrdName <- as.character(data$FPrdName)
     data$FFlag[data$FFlag == TRUE] <- 1
     data$FFlag[data$FFlag == FALSE] <-0
     #add the try
@@ -140,6 +144,7 @@ soNote_view_query <- function(conn=tsda::conn_rds('lcrds'),FSoNo1 ='117583137' ,
       ,[FBarcode] 外部条码
       ,[FNote]   订单备注
       ,[FCalcNo]  运算单号
+      ,[FPrdName] 品名
       ,[FNote_Tech] 技术备注
       ,[FChartNo_112] 图号112
       ,[FContact]  合同号
