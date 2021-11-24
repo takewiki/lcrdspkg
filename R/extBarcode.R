@@ -235,7 +235,7 @@ exrBarcode_getUnAllocated <- function(conn=tsda::conn_rds('lcrds'),
     select   top  ",n,"  FSoNo ,FChartNo,FNote_All as FNote,FBarcode  as FBarcode_ext  from v_lcrds_soNoteQueryAll
 
   where FCalcNo =  ",FCalcNo," and FChartNo ='",FChartNo,"' and FNote_All='",FNote_All,"'
-  order by FChartNo,FNote_All,FBarcode")
+  order by FChartNo,FNote_All,FPrdName")
 
   res <- tsda::sql_select(conn,sql)
   ncount <- nrow(res)

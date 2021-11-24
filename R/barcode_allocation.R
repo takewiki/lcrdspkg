@@ -108,7 +108,7 @@ extBarcode_AllocateResult <-function(conn_rds=tsda::conn_rds('lcrds'),
   #获取最大号
   calcNo <-extBarcode_MaxCalcNo(conn=conn_rds)
   # 添加排序规则
-  sql <- paste0(" select FSoNo,FChartNo,FBarcode_ext,FBarcode_inner,FNote,FPrdName from vw_takewiki_barcode_allocate_auto
+  sql <- paste0(" select distinct FSoNo,FChartNo,FBarcode_ext,FBarcode_inner,FNote,FPrdName from vw_takewiki_barcode_allocate_auto
  where FCalcNo = ",  calcNo  ,"    order by  FPrdName,FBarcode_inner   ")
   res <- tsda::sql_select(conn = conn_erp,sql)
 
