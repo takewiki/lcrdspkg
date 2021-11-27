@@ -16,7 +16,8 @@ log_getDetail <-function(
 where FCalcNo in
 (
 select   distinct top   ",topN,"    FCalcNo  from takewiki_barcode_allocate_auto
-order by FCalcNo desc  ) order by FCalcNo,FPrdName ")
+order by FCalcNo desc  ) order by FCalcNo,convert(decimal(6, 2), FPrdName)
+ ")
   data =tsda::sql_select(conn_erp,sql)
   ncount =nrow(data)
   if(ncount >0){
