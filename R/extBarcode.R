@@ -230,14 +230,25 @@ exrBarcode_getUnAllocated <- function(conn=tsda::conn_rds('lcrds'),
                                       FChartNo='P207012C134G01',
                                       FNote_All='G116*G103,G116,G107*G110,G363*G168,',
                                       n=4) {
+  # #修复排序的BUG
+  # #增加排序功能
 
   sql <- paste0("
     select   top  ",n,"  FSoNo ,FChartNo,FNote_All as FNote,FBarcode  as FBarcode_ext  from v_lcrds_soNoteQueryAll
 
   where FCalcNo =  ",FCalcNo," and FChartNo ='",FChartNo,"' and FNote_All='",FNote_All,"'
-  order by FChartNo,FNote_All,FPrdName")
-
+  order by FChartNo,FNote_All,convert(decimal(6, 0), FPrdName)")
   res <- tsda::sql_select(conn,sql)
+
+  # #先将数据转化为数值
+  # res$FPrdName <- as.numeric(res$FPrdName)
+  # #增加排序后的结果
+  # res = res[order(res$FPrdName), ]
+  # col_name_all <-c('','','','')
+
+
+
+
   ncount <- nrow(res)
   if(ncount >0)
   {

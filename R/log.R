@@ -12,11 +12,18 @@ log_getDetail <-function(
   conn_erp=tsda::conn_rds('LCERP2'),
   topN = 1){
 
-  sql <- paste0("select distinct * from vw_takewiki_barcode_allocate_auto
+  sql <- paste0("select distinct FSoNo,
+FChartNo,
+FNote,
+FBarcode_ext,
+FBarcode_inner,
+FCalcNo,
+convert(decimal(6, 2), FPrdName) as FPrdName from vw_takewiki_barcode_allocate_auto
 where FCalcNo in
 (
 select   distinct top   ",topN,"    FCalcNo  from takewiki_barcode_allocate_auto
-order by FCalcNo desc  ) order by FCalcNo,FPrdName ")
+order by FCalcNo desc  ) order by FCalcNo,convert(decimal(6, 2), FPrdName)
+ ")
   data =tsda::sql_select(conn_erp,sql)
   ncount =nrow(data)
   if(ncount >0){
