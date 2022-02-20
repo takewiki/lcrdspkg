@@ -4,7 +4,7 @@
 \alias{dm_ReadBy_ChartNo}
 \title{按图号读取数据}
 \usage{
-dm_ReadBy_ChartNo(conn = tsda::conn_rds("lcrds"), FchartNo = "SYE601B672")
+dm_ReadBy_ChartNo(conn = tsda::conn_rds("lcrds"), FchartNo = "SE304A200")
 }
 \arguments{
 \item{conn}{连接}

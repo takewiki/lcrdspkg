@@ -13,18 +13,30 @@
 #'
 #' @examples
 #' dm_ReadBy_ChartNo()
-dm_ReadBy_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672'){
-  FLtabs <-Ltab_get_uniqueMembers(conn,FchartNo)
-  raw <- lapply(FLtabs, function(FLtab){
-    print(FLtab)
-    res <- dm_ReadBy_ChartNo_Ltab(conn=conn,FchartNo = FchartNo,FLtab = FLtab)
-    return(res)
-  })
-  data <- do.call('rbind',raw)
+dm_ReadBy_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200'){
+
+  sql <- paste0("select * from   t_lcrds_bom
+where  fchartNo ='",FchartNo,"'
+order by  FParamG,FParamL, FIndexTxt")
+  data =  tsda::sql_select(conn,sql)
   return(data)
 
 
+
+
+  # raw <- lapply(FLtabs, function(FLtab){
+  #   print(FLtab)
+  #   res <- dm_ReadBy_ChartNo_Ltab(conn=conn,FchartNo = FchartNo,FLtab = FLtab)
+  #   return(res)
+  # })
+  # data <- do.call('rbind',raw)
+  # return(data)
+
+
 }
+
+
+
 
 #' 将图号数据写入数据库
 #'
@@ -36,36 +48,58 @@ dm_ReadBy_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672'
 #'
 #' @examples
 #' dm_writeDB_ChartNo()
-dm_writeDB_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672'){
-   data <- dm_ReadBy_ChartNo(conn=conn,FchartNo = FchartNo)
-   #删除要备份的数据
-   print('step01')
-   try({
-     dm_chartNo_deleteDB(conn=conn,FchartNo = FchartNo)
-   })
-   print('step02')
+dm_writeDB_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200'){
+  FLtabs <-Ltab_get_uniqueMembers(conn,FchartNo)
+  FGtabs <- Gtab_get_uniqueMembers(conn = conn,FchartNo = FchartNo)
 
-   #插入新的数据
-   #tsda::upload_data(conn,'t_lcrds_bom',data)
-   #不做判断,直接写入数据
-   #这个地方可能是性能出现问题的重点
-   print('testDB')
-   #增加分页处理
-   #data =data[1:10, ]
-   totalRow <- nrow(data)
-   if(totalRow <=1000){
-     pageRow = totalRow
+  ncount_g = length(FGtabs)
+  ncount_l = length(FLtabs)
+  if(ncount_g > 0 & !is.na(FGtabs[1])){
+    if(ncount_l >0 & !is.na(FLtabs[1])){
 
-   }else{
-     pageRow=1000
-   }
+      lapply(FGtabs, function(FParamG){
 
-   pages = page_setting(totalRow,pageRow)
-   lapply(pages, function(page){
-     item =  data[page, ]
-     tsda::db_writeTable(conn=conn,table_name = 't_lcrds_bom',r_object = item,append = T)
-     print('step03')
-   })
+        lapply(FLtabs,function(FParamL){
+          #核心处理程序
+
+          dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
+
+        })
+
+      })
+
+    }
+
+  }
+   # data <- dm_ReadBy_ChartNo(conn=conn,FchartNo = FchartNo)
+   # #删除要备份的数据
+   # print('step01')
+   # try({
+   #   dm_chartNo_deleteDB(conn=conn,FchartNo = FchartNo)
+   # })
+   # print('step02')
+   #
+   # #插入新的数据
+   # #tsda::upload_data(conn,'t_lcrds_bom',data)
+   # #不做判断,直接写入数据
+   # #这个地方可能是性能出现问题的重点
+   # print('testDB')
+   # #增加分页处理
+   # #data =data[1:10, ]
+   # totalRow <- nrow(data)
+   # if(totalRow <=1000){
+   #   pageRow = totalRow
+   #
+   # }else{
+   #   pageRow=1000
+   # }
+   #
+   # pages = page_setting(totalRow,pageRow)
+   # lapply(pages, function(page){
+   #   item =  data[page, ]
+   #   tsda::db_writeTable(conn=conn,table_name = 't_lcrds_bom',r_object = item,append = T)
+   #   print('step03')
+   # })
 
 
 

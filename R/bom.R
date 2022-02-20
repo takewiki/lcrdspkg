@@ -44,6 +44,35 @@ select * from t_lcrds_bom  where FchartNo='",FchartNo,"'")
 
 }
 
+#按图号删除BOM--------
+#' 按主图号删除数据库,按番与L番进行处理
+#'
+#' @param conn  连接
+#' @param FchartNo 主图号
+#' @param FParamG  G番
+#' @param FParamL L番
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_chartNo_delete_byGL()
+dm_chartNo_delete_byGL <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SYE601B672',FParamG = 'G01',FParamL ='L57') {
+  #备注数据
+  sql_bak <-paste0("insert into t_lcrds_bomDel
+select * from t_lcrds_bom where fchartNo ='",FchartNo,"' and FParamG = '",FParamG,"' and FParamL ='",FParamL,"'")
+  tsda::sql_update(conn,sql_bak)
+
+  sql_del <- paste0("delete from t_lcrds_bom where fchartNo ='",FchartNo,"' and FParamG = '",FParamG,"' and FParamL ='",FParamL,"'")
+  tsda::sql_update(conn,sql_del)
+
+}
+
+
+
+
+
+
 
 
 #单级BOM的核心逻辑函数------
@@ -82,6 +111,7 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
       #针对每一行数据进行处理,
       #针对件号进行处理
       keyNo <- tsdo::na_replace(r[i,'FkeyNo'],'')
+      #仅仅针对变量做了处理，所以不对的
       #针对件号中的变量进行处理
 
         #获取所有的变量变量
@@ -103,6 +133,7 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
           }
           if(value_type=='length'){
             #设置相应的长度
+            #这一部分的逻辑不对，目前仅仅是对G番进行判断，为什么要去设置数量变量
                   length_value <- as.numeric(length_value)
                   #针对值进行处理
                   r[i,'FLength'] <- length_value
@@ -133,6 +164,7 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
         }
         if(keyNo_type =='fixed'){
           #如果结果是常量,则需要设置Flength
+          #设置的结果还是不对，目前仅仅是针对G番进行判断
           r[i,'FLength'] <- as.numeric(keyNo)
 
         }

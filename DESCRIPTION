@@ -1,11 +1,11 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 4.7.2
+Version: 4.8.0
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: package for lcrds mainly for bom and price
+    use the algithm in the package as G list and L list
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
@@ -20,6 +20,7 @@ Collate:
     'bom.R'
     'bom_split.R'
     'chartMtrlMap.R'
+    'dataStat.R'
     'soSplit.R'
     'extBarcode.R'
     'intBarCode.R'

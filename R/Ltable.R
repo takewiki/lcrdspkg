@@ -322,6 +322,31 @@ Ltab_get_varValue <- function(conn=tsda::conn_rds('lcrds'),FchartNo = 'SYE601B67
   return(res)
 }
 
+
+#' 获取L表的变量值批量
+#'
+#' @param conn 连接
+#' @param FLtabBatch 可能多L番
+#' @param FchartNo 主图号
+#'
+#' @return 返回具有数值
+#' @export
+#'
+#' @examples
+#' Ltab_get_varValueBatch()
+Ltab_get_varValueBatch <- function(conn=tsda::conn_rds('lcrds'),FchartNo = 'SE304A200',FLtabBatch ='L33,L67'){
+  #针对L番进行处理
+  FLtab_format_sql = tsdo::sql_str2(strsplit(FLtabBatch,',')[[1]])
+  sql <- paste0("select  FLtab,FkeyNo,FLength  from t_lcrds_ltab where FchartNo = '",FchartNo,"' and FLtab in (",FLtab_format_sql,")
+                order by   FkeyNo,FLtab
+                ")
+  print(sql)
+  res <- tsda::sql_select(conn,sql)
+
+  return(res)
+}
+
+
 #' L表删除
 #'
 #' @param conn 逻辑

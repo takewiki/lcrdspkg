@@ -4,7 +4,7 @@
 \alias{dm_writeDB_ChartNo}
 \title{将图号数据写入数据库}
 \usage{
-dm_writeDB_ChartNo(conn = tsda::conn_rds("lcrds"), FchartNo = "SYE601B672")
+dm_writeDB_ChartNo(conn = tsda::conn_rds("lcrds"), FchartNo = "SE304A200")
 }
 \arguments{
 \item{conn}{连接}

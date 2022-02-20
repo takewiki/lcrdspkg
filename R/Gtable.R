@@ -260,6 +260,120 @@ Gtab_select_db <- function(conn=tsda::conn_rds('lcrds'),FchartNo='P235067C156',F
 
 }
 
+#' 从数据库中读取G表,用于计算BOM
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#' @param FGtab G番号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Gtab_select_db_calc()
+Gtab_select_db_calc <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200',FGtab='G01') {
+  sql <- paste0("select
+FchartNo,
+isnull(FItemName,'') as  FItemName,
+isnull(FSubChartNo,'') as    FSubChartNo ,
+isnull(FkeyNo,'') as    FkeyNo  ,
+isnull(FLtab,'') as    FLtab,
+isnull(FItemModel,'') as  FItemModel,
+isnull(FNote,'') as    FNote,
+FIndexTxt,
+FQty,
+FGtab  from t_lcrds_gtab where FchartNo ='",FchartNo,"'  and FGtab ='",FGtab,"'")
+  res <- tsda::sql_select(conn,sql)
+  return(res)
+
+}
+
+
+#' 从数据库中读取G表,用于计算G表的统计信息
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#' @param FGtab G番号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Gtab_select_db_stat()
+Gtab_select_db_stat <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200',FGtab='G01') {
+  #计取G表
+  data_G = Gtab_select_db_calc(conn = conn,FchartNo = FchartNo,FGtab = FGtab)
+  #计取L表所有变量
+  vars = Ltab_get_uniqueVars(conn = conn,FchartNo = FchartNo)
+  #计算变量
+
+  data_G$FkeyNo_tag = variable_search(data_G$FkeyNo,vars)
+  data_G$FLtab_tag = variable_search(data_G$FLtab,vars)
+  data_G$FQty_tag     = variable_search(data_G$FQty,vars)
+  data_G$FTagCount_dim = data_G$FkeyNo_tag + data_G$FLtab_tag
+  data_G$FTagCount_value = data_G$FQty_tag
+  data_G$FTagCount_total = data_G$FTagCount_dim + data_G$FTagCount_value
+  return(data_G)
+}
+
+#' 从数据库中读取G表,用于计算G表的统计信息,写入数据库
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#' @param FGtab G番号
+#' @param page_size 分批写入数据
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Gtab_select_db_stat()
+Gtab_write_db_stat <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200',FGtab='G01',page_size = 200) {
+  #计取数据
+  data  = Gtab_select_db_stat(conn = conn,FchartNo = FchartNo,FGtab = FGtab)
+  ncount = nrow(data)
+  if(ncount >0){
+    #当存在数据的情况下
+
+    #step1 备份原来的数据,不存在性能问题
+    sql_bak <- paste0("
+insert into t_lcrds_gtabStat_Del
+select * from t_lcrds_gtabStat
+where FchartNo ='",FchartNo,"' and FGtab ='",FGtab,"'")
+    tsda::sql_update(conn,sql_bak)
+
+    #删除原有的数据，删除数据也可以接受
+    sql_del <- paste0("
+delete  from t_lcrds_gtabStat
+where FchartNo ='",FchartNo,"' and FGtab ='",FGtab,"'")
+    tsda::sql_update(conn,sql_del)
+   #插入新的数据,可能有性能问题
+    pageInfo =  tsdo::paging_setting(volume = ncount,each_page = page_size)
+    pageCount = nrow(pageInfo)
+    lapply(1:pageCount, function(i){
+      from = pageInfo$FStart[i]
+      to = pageInfo$FEnd[i]
+      item =  data[from:to, ]
+      #写入数据
+      try({
+        tsda::db_writeTable(conn = conn,table_name = 't_lcrds_gtabStat',r_object = item,append = T)
+      })
+
+    })
+
+
+
+  }
+
+return(data)
+}
+
+
+
+
+
+
+
 
 
 #' 从数据库中读取G表
