@@ -37,6 +37,36 @@ order by  FParamG,FParamL, FIndexTxt")
 
 
 
+#' 将图号数据写入数据库,只更新指定G番
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#' @param FParamG G番号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_writeDB_ChartNo_G()
+dm_writeDB_ChartNo_G <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200',FParamG='G01'){
+
+  FLtabs <-Ltab_get_uniqueMembers(conn,FchartNo)
+  print(FLtabs)
+  ncount_l = length(FLtabs)
+  print(ncount_l)
+  if(ncount_l >0 & ! is.na(FLtabs[1])){
+    lapply(FLtabs,function(FParamL){
+      print(1)
+      #核心处理程序
+
+      dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
+
+    })
+  }
+
+}
+
+
 
 #' 将图号数据写入数据库
 #'

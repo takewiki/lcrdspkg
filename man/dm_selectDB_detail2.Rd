@@ -6,8 +6,8 @@
 \usage{
 dm_selectDB_detail2(
   conn = tsda::conn_rds("lcrds"),
-  FchartNo = "YX200A714",
-  FParamG = "GS11",
+  FchartNo = "SE304A200",
+  FParamG = "G01",
   FParamL = ""
 )
 }

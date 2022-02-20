@@ -89,3 +89,14 @@ dm_writeDB_ChartNo()
 dm_ReadBy_ChartNo()
 
 
+dm_selectDB_detail2()
+
+
+
+dm_selectDB_detail2()
+
+
+dm_selectDB_detail2(FParamL = 'L33')
+dm_selectDB_detail2(FParamL = 'L33,L57,L65,L67,L73,L92,L99,L82')
+
+
