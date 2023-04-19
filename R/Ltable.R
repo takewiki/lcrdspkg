@@ -251,6 +251,59 @@ where FchartNo = '",FchartNo,"'")
 }
 
 
+
+
+#' 检查L番是否存在
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Ltab_checkExist()
+Ltab_checkExist <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A049') {
+  sql <- paste0("  select count(1) as FCount from t_lcrds_ltab
+where FchartNo = '",FchartNo,"'")
+  data <- tsda::sql_select(conn,sql)
+  ncount = data$FCount
+  if(ncount >0){
+    res = TRUE
+  }else{
+    res = FALSE
+  }
+  return(res)
+}
+
+
+
+#' 检查具体的某个L番是否存在
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#' @param FLtab  具体的L番表
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Ltab_checkExist_one()
+Ltab_checkExist_one <- function(conn=tsda::conn_rds('lcrds'),FchartNo='P203031B120',FLtab ='L04') {
+  sql <- paste0("  select count(1) as FCount from t_lcrds_ltab
+where FchartNo = '",FchartNo,"'  and FLtab ='",FLtab,"'")
+  data <- tsda::sql_select(conn,sql)
+  ncount = data$FCount
+  if(ncount >0){
+    res = TRUE
+  }else{
+    res = FALSE
+  }
+  return(res)
+}
+
+
+
 #' L表获取唯一变量
 #'
 #' @param conn 连接

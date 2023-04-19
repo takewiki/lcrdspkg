@@ -81,6 +81,8 @@ dm_ReadBy_ChartNo_LtabBatch_calc <- function(conn=tsda::conn_rds('lcrds'),Fchart
   #处理规则
   #针对多个变量先进行排序处理
   #FLtabBatch = varList_sort(FLtabBatch)
+  #需要追加对L番的判断，如果L番都不存在，就不需要进行计算了
+
   data =  Gtab_write_db_stat(conn = conn,FchartNo = FchartNo,FGtab = FGtab,page_size = page_size)
   #View(data)
   ncount  = nrow(data)
@@ -283,6 +285,8 @@ dm_ReadBy_ChartNo_LtabBatch_calc <- function(conn=tsda::conn_rds('lcrds'),Fchart
   ncount_com =nrow(data_com)
   if(ncount_com >0){
 
+
+
     #step1 备份原来的数据,不存在性能问题
     sql_bak <- paste0("
 insert into t_bom_DetailDel
@@ -404,11 +408,29 @@ return(data)
 #' @examples
 #' dm_ReadBy_ChartNo_GL_dealOne()
 dm_ReadBy_ChartNo_GL_dealOne<- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200',FParamG='G01',FParamL ='L33',page_size = 300){
-  #数据处理
-  dm_ReadBy_ChartNo_LtabBatch_calc(conn = conn,FchartNo = FchartNo,FGtab = FParamG,FLtabBatch = FParamL,page_size = page_size)
-  #标准数据处理
-  data = dm_ReadBy_ChartNo_LtabBatch_dealBom(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = page_size)
-  return(data)
+  #如果不存在L番的数据，则不进行计算
+  flag = Ltab_checkExist_one(conn = conn,FchartNo = FchartNo,FLtab = FParamL)
+  if(flag){
+    #数据处理
+    dm_ReadBy_ChartNo_LtabBatch_calc(conn = conn,FchartNo = FchartNo,FGtab = FParamG,FLtabBatch = FParamL,page_size = page_size)
+    #标准数据处理
+    data = dm_ReadBy_ChartNo_LtabBatch_dealBom(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = page_size)
+    return(data)
+  }else{
+    #不存在L番数据
+    #删除数据库中存在的异常数据
+    sql_del = paste0("delete  from
+    [t_bom_Detail]
+    where FchartNo ='",FchartNo,"' and FGtab ='",FParamG,"' and FParam_L ='",FParamL,"'")
+    tsda::sql_update(conn=conn,sql_str = sql_del)
+    sql_del2 = paste0("delete  from
+    t_lcrds_bom
+where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"' and FParamL ='",FParamL,"' ")
+    tsda::sql_update(conn=conn,sql_str = sql_del2)
+
+
+  }
+
 
 
 }

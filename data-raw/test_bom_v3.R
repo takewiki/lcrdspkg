@@ -99,4 +99,15 @@ dm_selectDB_detail2()
 dm_selectDB_detail2(FParamL = 'L33')
 dm_selectDB_detail2(FParamL = 'L33,L57,L65,L67,L73,L92,L99,L82')
 
+dm_dealAll2()
+
+
+
+
+dm_writeDB_ChartNo(FchartNo = 'SE302B145')
+
+FLtabs <-Ltab_get_uniqueMembers(FchartNo='SE302B145')
+
+length(FLtabs)
+
 
