@@ -327,7 +327,9 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
 #' dm_selectDB_detail2()
 dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A200', FParamG ='G01'  , FParamL ='') {
 
+  # original code-----
   if (FParamL == ''){
+    #等于0的场景下的的处理-----
     dm_writeDB_ChartNo_G(conn = conn,FchartNo = FchartNo,FParamG = FParamG)
     #针对L番进行判断
     flag =  Ltab_checkExist(conn = conn,FchartNo = FchartNo)
@@ -373,8 +375,6 @@ dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A20
     }
 
   }else{
-    #重算部分数据
-    dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
     sql = paste0("select FchartNo,
   FParamG,
   FParamL,
@@ -392,182 +392,77 @@ dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A20
   where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  '",FParamL,"'
                  order by  FParamG,FParamL, FIndexTxt")
   }
-  print(sql)
   res <- tsda::sql_select(conn,sql)
   #针对数据进行处理
   ncount <- nrow(res)
   if(ncount>0){
     names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
-                    '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
+                   '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
 
-   }
+  }else{
+    #进行二次取数
+    if (FParamL == ''){
+      #重算所有G番
+      dm_writeDB_ChartNo_G(conn = conn,FchartNo = FchartNo,FParamG = FParamG)
+      #重新查询
 
-    #else{
-  #   #进行二次取数
-  #   if (FParamL == ''){
-  #     #重算所有G番
-  #     dm_writeDB_ChartNo_G(conn = conn,FchartNo = FchartNo,FParamG = FParamG)
-  #     #重新查询
-  #
-  #
-  #     sql = paste0("select FchartNo,
-  # FParamG,
-  # FParamL,
-  # FItemName,
-  # FSubChartNo,
-  # FkeyNo,
-  # FLtab,
-  # FItemModel,
-  # FNote,
-  # FIndexTxt,
-  # FQty,
-  # FLength,
-  # FTotalQty
-  # from  t_lcrds_bom
-  # where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'
-  #                  order by  FParamG,FParamL, FIndexTxt
-  #                  ")
-  #     res <- tsda::sql_select(conn,sql)
-  #     if(nrow(res)>0){
-  #       names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
-  #                      '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
-  #     }
-  #
-  #   }else{
-  #     #重算部分数据
-  #     dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
-  #     sql = paste0("select FchartNo,
-  # FParamG,
-  # FParamL,
-  # FItemName,
-  # FSubChartNo,
-  # FkeyNo,
-  # FLtab,
-  # FItemModel,
-  # FNote,
-  # FIndexTxt,
-  # FQty,
-  # FLength,
-  # FTotalQty
-  # from  t_lcrds_bom
-  # where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  '",FParamL,"'
-  #                  order by  FParamG,FParamL, FIndexTxt
-  #                  ")
-  #     res <- tsda::sql_select(conn,sql)
-  #     if(nrow(res)>0){
-  #       names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
-  #                      '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
-  #     }
-  #   }
-  #
-  #
-  #
-  # }
+
+      sql = paste0("select FchartNo,
+  FParamG,
+  FParamL,
+  FItemName,
+  FSubChartNo,
+  FkeyNo,
+  FLtab,
+  FItemModel,
+  FNote,
+  FIndexTxt,
+  FQty,
+  FLength,
+  FTotalQty
+  from  t_lcrds_bom
+  where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'
+                   order by  FParamG,FParamL, FIndexTxt
+                   ")
+      res <- tsda::sql_select(conn,sql)
+      if(nrow(res)>0){
+        names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
+                       '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
+      }
+
+    }else{
+      #重算部分数据
+      dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
+      sql = paste0("select FchartNo,
+  FParamG,
+  FParamL,
+  FItemName,
+  FSubChartNo,
+  FkeyNo,
+  FLtab,
+  FItemModel,
+  FNote,
+  FIndexTxt,
+  FQty,
+  FLength,
+  FTotalQty
+  from  t_lcrds_bom
+  where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  '",FParamL,"'
+                   order by  FParamG,FParamL, FIndexTxt
+                   ")
+      res <- tsda::sql_select(conn,sql)
+      if(nrow(res)>0){
+        names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
+                       '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
+      }
+    }
+
+
+
+  }
 
 
   return(res)
-
-
-  #针对数据符号SQL格式
-#   lInput = FParamL
-#   FParamL = sql_Ltab(FParamL)
-#
-#   if(FParamL == ''){
-#     sql <- paste0("select
-# FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG,
-# FParamL = (
-#         stuff(
-#             (select ',' + FParamL from t_lcrds_bom where FchartNo = A.FchartNo
-# 			and FIndexTxt = A.FIndexTxt  and FParamG =A.FParamG   for xml path('')),
-#             1,
-#             1,
-#             ''
-#         )
-#     )
-# from t_lcrds_bom as A
-# where FchartNo ='",FchartNo,"'
-# and A.FParamG ='",FParamG,"'
-# group by FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG
-# order by FIndexTxt")
-#   }else{
-#     sql <- paste0("select
-# FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG,
-# FParamL = (
-#   stuff(
-#     (select ',' + FParamL from t_lcrds_bom where FchartNo = A.FchartNo
-#      and FIndexTxt = A.FIndexTxt  and FParamG =A.FParamG and FParamL in (",FParamL,")   for xml path('')),
-#     1,
-#     1,
-#     ''
-#   )
-# )
-# from t_lcrds_bom as A
-# where FchartNo ='",FchartNo,"'
-# and A.FParamG ='",FParamG,"'
-# and A.FParamL in (",FParamL,")
-# group by FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,FParamG
-# order by FIndexTxt")
-#   }
-
-
-
-  # if(ncount >0){
-  #   #针对有数据的情况
-  #   res <- res[ ,c('FchartNo','FParamG','FParamL','FItemName','FSubChartNo','FkeyNo','FLtab','FItemModel',
-  #                  'FNote','FIndexTxt','FQty','FLength','FTotalQty')]
-  #   res$FParamL <- lInput
-  #
-  #   res2 <- split(res,res$FIndexTxt)
-  #   #处理重复的情况
-  #
-  #   raw <-lapply(res2, function(data){
-  #     ncount = nrow(data)
-  #     if(ncount >1){
-  #       find = 0
-  #       for (i in 1:ncount) {
-  #         value =  data[i,'FkeyNo']
-  #         print(value)
-  #
-  #         type = bom_getVarValueType(value)
-  #         if(type =='G' |type =='seq'){
-  #           info = data[i,]
-  #           find =1
-  #           print(info)
-  #         }
-  #
-  #       }
-  #       if(find == 0){
-  #         info = data[1,]
-  #         print(info)
-  #       }
-  #
-  #
-  #     }else{
-  #       info <- data
-  #     }
-  #     return(info)
-  #   })
-  #   res3 = do.call('rbind',raw)
-  # }else{
-  #   #针对没有数据的情况
-  #   FchartNo2 = FchartNo
-  #   FParamG2 = FParamG
-  #   FParamL2 = FParamL
-  #   FItemName = ""
-  #   FSubChartNo =""
-  #   FkeyNo  =""
-  #   FLtab =""
-  #   FItemModel =""
-  #   FNote =""
-  #   FIndexTxt =""
-  #   FQty = 0
-  #   FLength =0
-  #   FTotalQty = 0
-  #   res3 <- data.frame(FchartNo2,FParamG2,FParamL2,FItemName,FSubChartNo,FkeyNo,FLtab,
-  #                       FItemModel,FNote,FIndexTxt,FQty,FLength,FTotalQty,stringsAsFactors = F)
-  #
-  # }
-
 
 
 
