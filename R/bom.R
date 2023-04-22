@@ -313,7 +313,7 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
 }
 
 
-#' BOM查询多L番
+#' 从数据库中直接查询BOM
 #'
 #' @param conn 连接
 #' @param FchartNo 主图号
@@ -324,17 +324,34 @@ dm_ReadBy_ChartNo_Ltab <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YX200A
 #' @export
 #'
 #' @examples
-#' dm_selectDB_detail2()
-dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A200', FParamG ='G01'  , FParamL ='') {
+#' dm_selectDB_query()
+dm_selectDB_query <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A200', FParamG ='G01'  , FParamL ='') {
+  #BOM查询,如果主图号L番存在，不填写表示所有L番
+  #如果主图号L番不存在，不填写就所有L番为空；
+  #如果L番是多个，第一次从数据库中直接查询
+  #如果查询到，则直接返回结果，将进行去重处理
+  #如果没有查询到，则需要先进行运算，运算完成后进行二次查询；
 
   # original code-----
+  #part0-针对L番进行标准化处理------
+  FParamL = tsdo::str_sort(FParamL)
   if (FParamL == ''){
+    #part1 先对L番进行判断,判断为0的情况；----
+
     #等于0的场景下的的处理-----
-    dm_writeDB_ChartNo_G(conn = conn,FchartNo = FchartNo,FParamG = FParamG)
+
+    #需要了解一下这个函数的作用
+    #是对G番的数据进行重算，先进行注释处理
+    #针对G番的数据进行处理
+    #dm_writeDB_ChartNo_G(conn = conn,FchartNo = FchartNo,FParamG = FParamG)
     #针对L番进行判断
+    #判断L番是否存在
     flag =  Ltab_checkExist(conn = conn,FchartNo = FchartNo)
     if(flag){
+      #1.1L番为空表示所有的L番------
       #存在L番，留空表示所有L番
+      #其中不仅仅是单一的L番，也包括多个L番的组合
+      #这一部分只提供了SQL，不做执行
       sql = paste0("select FchartNo,
   FParamG,
   FParamL,
@@ -352,8 +369,11 @@ dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A20
   where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'
                   order by  FParamG,FParamL, FIndexTxt")
 
-    }else{
-      #不存在L番，使用空表示
+    }
+    else{
+      #1.2不存在L番，使用空表示---------
+      #此时直接对L番进行赋值，取值如下
+      #FParamL = ''
       sql = paste0("select FchartNo,
   FParamG,
   FParamL,
@@ -368,13 +388,14 @@ dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A20
   FLength,
   FTotalQty
   from  t_lcrds_bom
-  where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  '",FParamL,"'
-                 order by  FParamG,FParamL, FIndexTxt")
+  where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  ''  order by  FParamG,FParamL, FIndexTxt")
 
 
     }
 
-  }else{
+  }
+  else{
+    #2.1 L番不为空即包括一个或多个L番-----
     sql = paste0("select FchartNo,
   FParamG,
   FParamL,
@@ -392,80 +413,59 @@ dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A20
   where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  '",FParamL,"'
                  order by  FParamG,FParamL, FIndexTxt")
   }
+  #分为如上三种情况，用于从数据库表t_lcrds_bom中进行直接取数
   res <- tsda::sql_select(conn,sql)
-  #针对数据进行处理
   ncount <- nrow(res)
   if(ncount>0){
     names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
                    '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
 
-  }else{
-    #进行二次取数
-    if (FParamL == ''){
-      #重算所有G番
-      dm_writeDB_ChartNo_G(conn = conn,FchartNo = FchartNo,FParamG = FParamG)
-      #重新查询
+  }
+  return(res)
+}
 
 
-      sql = paste0("select FchartNo,
-  FParamG,
-  FParamL,
-  FItemName,
-  FSubChartNo,
-  FkeyNo,
-  FLtab,
-  FItemModel,
-  FNote,
-  FIndexTxt,
-  FQty,
-  FLength,
-  FTotalQty
-  from  t_lcrds_bom
-  where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'
-                   order by  FParamG,FParamL, FIndexTxt
-                   ")
-      res <- tsda::sql_select(conn,sql)
-      if(nrow(res)>0){
-        names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
-                       '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
-      }
+#' BOM查询多L番
+#'
+#' @param conn 连接
+#' @param FchartNo 主图号
+#' @param FParamG G番
+#' @param FParamL L番
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_selectDB_detail2()
+dm_selectDB_detail2 <- function(conn=tsda::conn_rds('lcrds'),FchartNo ='SE304A200', FParamG ='G01'  , FParamL ='') {
+  #第一次直接从数据库中取数
+  res <- dm_selectDB_query(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL=FParamL)
+  #针对数据进行处理
+  ncount <- nrow(res)
+  if(ncount== 0){
 
-    }else{
-      #重算部分数据
-      dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
-      sql = paste0("select FchartNo,
-  FParamG,
-  FParamL,
-  FItemName,
-  FSubChartNo,
-  FkeyNo,
-  FLtab,
-  FItemModel,
-  FNote,
-  FIndexTxt,
-  FQty,
-  FLength,
-  FTotalQty
-  from  t_lcrds_bom
-  where FchartNo ='",FchartNo,"' and FParamG ='",FParamG,"'  and FParamL =  '",FParamL,"'
-                   order by  FParamG,FParamL, FIndexTxt
-                   ")
-      res <- tsda::sql_select(conn,sql)
-      if(nrow(res)>0){
-        names(res) <-c('主图号','G番号-参数','L番号-参数','子项名称','分图号','子项件号','子项L番','子项规格',
-                       '子项备注','子项序号','子项基本数量','子项长度/系数','子项总数量')
-      }
+    #也就是说数据库中没有相关的数据
+    #尤其是针对多L番,数据对数据进行动态重算
+    #因为数据库中哌可通不存在相关的数据，因此需要进行计算；
+    #重算的代码如下
+    #应该是重算每一下L番的数据
+    FParamL = tsdo::str_sort(FParamL)
+    if(FParamL != ''){
+
+      #针对数据进行批量处理
+
+        dm_ReadBy_ChartNo_GL_dealOne(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = 300)
+
+
+
+
     }
 
 
-
+     #重算后再次获取相应的结果
+     res <- dm_selectDB_query(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL=FParamL)
   }
-
-
   return(res)
-
-
-
 }
 
 

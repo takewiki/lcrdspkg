@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 4.8.3
+Version: 4.8.4
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: package for lcrds mainly for bom and price
@@ -30,3 +30,6 @@ Collate:
     'sql_createTable.R'
     'upload.R'
     'util.R'
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
