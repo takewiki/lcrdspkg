@@ -82,206 +82,243 @@ dm_ReadBy_ChartNo_LtabBatch_calc <- function(conn=tsda::conn_rds('lcrds'),Fchart
   #针对多个变量先进行排序处理
   #FLtabBatch = varList_sort(FLtabBatch)
   #需要追加对L番的判断，如果L番都不存在，就不需要进行计算了
+  #增加对L番为''的处理20230505
 
   data =  Gtab_write_db_stat(conn = conn,FchartNo = FchartNo,FGtab = FGtab,page_size = page_size)
   #View(data)
+  print('s0')
   ncount  = nrow(data)
-  vars = Ltab_get_varValueBatch(conn = conn,FchartNo = FchartNo,FLtabBatch = FLtabBatch)
-  data_raw = lapply(1:ncount, function(i){
-    row = data[i, ]
-    # print(row)
-    FchartNo = row$FchartNo
-    FItemName  = row$FItemName
-    FSubChartNo  = row$FSubChartNo
+
+  #针对每一下G番进行处理，还要考虑到L番为''的情况
+  if(FLtabBatch == ""){
+    #增加为空的处理
+    if (ncount >0){
+      print('s11')
+      data_com =data
+      data_com$FkeyNo_var <-''
+      data_com$FkeyNo_len <- 0
+      data_com$FLtab_var <-''
+      data_com$FLtab_len <-0
+      data_com$FQty_var <-''
+      data_com$FQty_len <-1
+      data_com$total_len <- data_com$FQty
+      data_com$FTagMode <-'000'
+      data_com$FTagNote <-'没有L番的常数项'
+      data_com$FCalcNote <-'不需替代'
+      data_com$FLtab_used4G <-''
+      data_com$FLtab_used4L <-''
+      data_com$FLtab_used4Q <-''
+      data_com$FParam_L <-''
 
 
-    FkeyNo = row$FkeyNo
-    FLtab  = row$FLtab
-    FItemModel   = row$FItemModel
-    FNote  = row$FNote
-    FIndexTxt  =  row$FIndexTxt
-    FQty = row$FQty
-    FGtab =  row$FGtab
-
-    FkeyNo_tag =  row$FkeyNo_tag
-    FLtab_tag  = row$FLtab_tag
-    FQty_tag = row$FQty_tag
-    FTagCount_dim  = row$FTagCount_dim
-    FTagCount_value  = row$FTagCount_value
-    FTagCount_total = row$FTagCount_total
-    ruleInfo = variable_getMode(FkeyNo_tag = FkeyNo_tag,FLtab_tag = FLtab_tag,FQty_tag = FQty_tag)
-    ruleCount = nrow(ruleInfo)
-    if(ruleCount >0){
-      FTagMode = ruleInfo$FMode
-      FTagNote = ruleInfo$FNote
-    }else{
-      FTagMode = '未知'
-      FTagNote = '未知'
     }
 
 
 
-    #针对件号进行处理
-    if(FkeyNo_tag == 1){
-      #变更需要进行取
-      FkeyNo_sel = vars[vars$FkeyNo == FkeyNo,"FLength"]
 
-      FkeyNo_len =  length(FkeyNo_sel)
-      if(FkeyNo_len >0){
-        #存在数据,并进行替代
-        FkeyNo_var = FkeyNo
-        FLtab_used4G = vars[vars$FkeyNo == FkeyNo,"FLtab"]
-        FkeyNo = as.character(FkeyNo_sel)
+  }else{
+    #不为空的处理
+    print('s12')
+    vars = Ltab_get_varValueBatch(conn = conn,FchartNo = FchartNo,FLtabBatch = FLtabBatch)
+    print('s01')
+    data_raw = lapply(1:ncount, function(i){
+      row = data[i, ]
+      # print(row)
+      FchartNo = row$FchartNo
+      FItemName  = row$FItemName
+      FSubChartNo  = row$FSubChartNo
 
+
+      FkeyNo = row$FkeyNo
+      FLtab  = row$FLtab
+      FItemModel   = row$FItemModel
+      FNote  = row$FNote
+      FIndexTxt  =  row$FIndexTxt
+      FQty = row$FQty
+      FGtab =  row$FGtab
+
+      FkeyNo_tag =  row$FkeyNo_tag
+      FLtab_tag  = row$FLtab_tag
+      FQty_tag = row$FQty_tag
+      FTagCount_dim  = row$FTagCount_dim
+      FTagCount_value  = row$FTagCount_value
+      FTagCount_total = row$FTagCount_total
+      ruleInfo = variable_getMode(FkeyNo_tag = FkeyNo_tag,FLtab_tag = FLtab_tag,FQty_tag = FQty_tag)
+      ruleCount = nrow(ruleInfo)
+      if(ruleCount >0){
+        FTagMode = ruleInfo$FMode
+        FTagNote = ruleInfo$FNote
+      }else{
+        FTagMode = '未知'
+        FTagNote = '未知'
+      }
+
+
+
+      #针对件号进行处理
+      if(FkeyNo_tag == 1){
+        #变更需要进行取
+        FkeyNo_sel = vars[vars$FkeyNo == FkeyNo,"FLength"]
+
+        FkeyNo_len =  length(FkeyNo_sel)
+        if(FkeyNo_len >0){
+          #存在数据,并进行替代
+          FkeyNo_var = FkeyNo
+          FLtab_used4G = vars[vars$FkeyNo == FkeyNo,"FLtab"]
+          FkeyNo = as.character(FkeyNo_sel)
+
+
+        }else{
+          #不存在数据,保留变量，不再替换
+          FkeyNo_var = FkeyNo
+          FkeyNo = FkeyNo
+          FkeyNo_len = 0
+          FLtab_used4G =''
+
+        }
 
       }else{
-        #不存在数据,保留变量，不再替换
-        FkeyNo_var = FkeyNo
+        #常数项,不需要替代
+        FkeyNo_var = ''
         FkeyNo = FkeyNo
-        FkeyNo_len = 0
+        FkeyNo_len = 1
         FLtab_used4G =''
 
       }
+      #针对L番进行处理
+      if(FLtab_tag == 1){
+        #变更需要进行取
+        FLtab_sel = vars[vars$FkeyNo == FLtab,"FLength"]
 
-    }else{
-      #常数项,不需要替代
-      FkeyNo_var = ''
-      FkeyNo = FkeyNo
-      FkeyNo_len = 1
-      FLtab_used4G =''
+        FLtab_len =  length(FLtab_sel)
+        if(FLtab_len >0){
+          #存在数据,并进行替代
+          FLtab_var = FLtab
+          FLtab_used4L = vars[vars$FkeyNo == FLtab,"FLtab"]
+          #完整查询后再做替代
+          FLtab = as.character(FLtab_sel)
+          print(1)
+          print(vars)
+          print(FLtab)
+          print(FLtab_used4L)
+        }else{
+          #不存在数据
+          FLtab_var = FLtab
+          FLtab = FLtab
+          FLtab_len = 0
+          FLtab_used4L = ''
+          print(2)
+          print(FLtab_used4L)
 
-    }
-    #针对L番进行处理
-    if(FLtab_tag == 1){
-      #变更需要进行取
-      FLtab_sel = vars[vars$FkeyNo == FLtab,"FLength"]
+        }
 
-      FLtab_len =  length(FLtab_sel)
-      if(FLtab_len >0){
-        #存在数据,并进行替代
-        FLtab_var = FLtab
-        FLtab_used4L = vars[vars$FkeyNo == FLtab,"FLtab"]
-        #完整查询后再做替代
-        FLtab = as.character(FLtab_sel)
-        print(1)
-        print(vars)
-        print(FLtab)
-        print(FLtab_used4L)
       }else{
-        #不存在数据
-        FLtab_var = FLtab
+        #常数项,不需要替代
+        FLtab_var = ''
         FLtab = FLtab
-        FLtab_len = 0
+        FLtab_len = 1
         FLtab_used4L = ''
-        print(2)
+        print(3)
         print(FLtab_used4L)
 
       }
+      #针对长度进行替代
+      if(FQty_tag == 1){
+        #变更需要进行取
+        FQty_sel = vars[vars$FkeyNo == FQty,"FLength"]
+        FQty_len =  length(FQty_sel)
+        if(FQty_len >0){
+          #存在数据,并进行替代
+          FQty_var = FQty
+          FLtab_used4Q = vars[vars$FkeyNo == FQty,"FLtab"]
+          FQty = as.integer(FQty_sel)
 
-    }else{
-      #常数项,不需要替代
-      FLtab_var = ''
-      FLtab = FLtab
-      FLtab_len = 1
-      FLtab_used4L = ''
-      print(3)
-      print(FLtab_used4L)
+        }else{
+          #不存在数据
+          FQty_var = FQty
+          FQty = FQty
+          FQty_len = 0
+          FLtab_used4Q =''
 
-    }
-    #针对长度进行替代
-    if(FQty_tag == 1){
-      #变更需要进行取
-      FQty_sel = vars[vars$FkeyNo == FQty,"FLength"]
-      FQty_len =  length(FQty_sel)
-      if(FQty_len >0){
-        #存在数据,并进行替代
-        FQty_var = FQty
-        FLtab_used4Q = vars[vars$FkeyNo == FQty,"FLtab"]
-        FQty = as.integer(FQty_sel)
+
+        }
 
       }else{
-        #不存在数据
-        FQty_var = FQty
+        FQty_var = ''
+        #常数项,不需要替代
         FQty = FQty
-        FQty_len = 0
+        FQty_len = 1
         FLtab_used4Q =''
 
+      }
+      #计算总长度
+      total_len = FkeyNo_len*FLtab_len*FQty_len
+      if(total_len == 0){
+        #print('变量不全')
+        FCalcNote = '变量替代不全'
+        FQty = 0
+        FParam_L = FLtabBatch
+        #print(FLtab_used4G)
+        #print(FLtab_used4L)
+        # print(FLtab_used4Q)
+        res = data.frame(FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FGtab,FkeyNo_tag,FLtab_tag,FQty_tag,FTagCount_dim,FTagCount_value,FTagCount_total,FkeyNo_var,FkeyNo_len,FLtab_var,FLtab_len,FQty_var,FQty_len,total_len,FTagMode,FTagNote,FCalcNote,FLtab_used4G,FLtab_used4L,FLtab_used4Q,FParam_L,stringsAsFactors = F )
+      }else{
+        #print('OK')
+        FCalcNote = '变量完成替代或不需替代'
+        FchartNo = rep(FchartNo,total_len)
+        FItemName = rep(FItemName,total_len)
+        FSubChartNo = rep(FSubChartNo,total_len)
+        #增加判断处理,防止产生多个匹配结果
+        FkeyNo = rep(FkeyNo,total_len/FkeyNo_len)
+        FLtab = rep(FLtab,total_len/FLtab_len)
+        FItemModel =  rep(FItemModel,total_len)
+        FNote = rep(FNote,total_len)
+        FIndexTxt = rep(FIndexTxt,total_len)
+        FQty =  rep(FQty,total_len/FQty_len)
+        FGtab =  rep(FGtab,total_len)
+        FkeyNo_tag =  rep(FkeyNo_tag,total_len)
+        FLtab_tag = rep(FLtab_tag,total_len)
+        FQty_tag =  rep(FQty_tag,total_len)
+        FTagCount_dim = rep(FTagCount_dim,total_len)
+        FTagCount_value = rep(FTagCount_value,total_len)
+        FTagCount_total =  rep(FTagCount_total,total_len)
+        FkeyNo_var =  rep(FkeyNo_var,total_len)
+        FkeyNo_len = rep(FkeyNo_len,total_len)
+        FLtab_var = rep(FLtab_var,total_len)
+        FLtab_len =  rep(FLtab_len,total_len)
+        FQty_var = rep(FQty_var,total_len)
+        FQty_len = rep(FQty_len,total_len)
+        FTagMode = rep(FTagMode,total_len)
+        FTagNote = rep(FTagNote,total_len)
+        FCalcNote = rep(FCalcNote,total_len)
+        FLtab_used4G =rep(FLtab_used4G,total_len)
+        FLtab_used4L = rep(FLtab_used4L,total_len)
+        FLtab_used4Q = rep(FLtab_used4Q,total_len)
+        FParam_L = rep(FLtabBatch,total_len)
+        total_len = rep(total_len,total_len)
+        #print(FLtab_used4G)
+        #print(FLtab_used4L)
+        #print(FLtab_used4Q)
+        res = data.frame(FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FGtab,FkeyNo_tag,FLtab_tag,FQty_tag,FTagCount_dim,FTagCount_value,FTagCount_total,FkeyNo_var,FkeyNo_len,FLtab_var,FLtab_len,FQty_var,FQty_len,total_len,FTagMode,FTagNote,FCalcNote,FLtab_used4G,FLtab_used4L,FLtab_used4Q,FParam_L,stringsAsFactors = F )
+
 
       }
 
-    }else{
-      FQty_var = ''
-      #常数项,不需要替代
-      FQty = FQty
-      FQty_len = 1
-      FLtab_used4Q =''
-
-    }
-    #计算总长度
-    total_len = FkeyNo_len*FLtab_len*FQty_len
-    if(total_len == 0){
-      #print('变量不全')
-      FCalcNote = '变量替代不全'
-      FQty = 0
-      FParam_L = FLtabBatch
-      #print(FLtab_used4G)
-      #print(FLtab_used4L)
-      # print(FLtab_used4Q)
-      res = data.frame(FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FGtab,FkeyNo_tag,FLtab_tag,FQty_tag,FTagCount_dim,FTagCount_value,FTagCount_total,FkeyNo_var,FkeyNo_len,FLtab_var,FLtab_len,FQty_var,FQty_len,total_len,FTagMode,FTagNote,FCalcNote,FLtab_used4G,FLtab_used4L,FLtab_used4Q,FParam_L,stringsAsFactors = F )
-    }else{
-      #print('OK')
-      FCalcNote = '变量完成替代或不需替代'
-      FchartNo = rep(FchartNo,total_len)
-      FItemName = rep(FItemName,total_len)
-      FSubChartNo = rep(FSubChartNo,total_len)
-      #增加判断处理,防止产生多个匹配结果
-      FkeyNo = rep(FkeyNo,total_len/FkeyNo_len)
-      FLtab = rep(FLtab,total_len/FLtab_len)
-      FItemModel =  rep(FItemModel,total_len)
-      FNote = rep(FNote,total_len)
-      FIndexTxt = rep(FIndexTxt,total_len)
-      FQty =  rep(FQty,total_len/FQty_len)
-      FGtab =  rep(FGtab,total_len)
-      FkeyNo_tag =  rep(FkeyNo_tag,total_len)
-      FLtab_tag = rep(FLtab_tag,total_len)
-      FQty_tag =  rep(FQty_tag,total_len)
-      FTagCount_dim = rep(FTagCount_dim,total_len)
-      FTagCount_value = rep(FTagCount_value,total_len)
-      FTagCount_total =  rep(FTagCount_total,total_len)
-      FkeyNo_var =  rep(FkeyNo_var,total_len)
-      FkeyNo_len = rep(FkeyNo_len,total_len)
-      FLtab_var = rep(FLtab_var,total_len)
-      FLtab_len =  rep(FLtab_len,total_len)
-      FQty_var = rep(FQty_var,total_len)
-      FQty_len = rep(FQty_len,total_len)
-      FTagMode = rep(FTagMode,total_len)
-      FTagNote = rep(FTagNote,total_len)
-      FCalcNote = rep(FCalcNote,total_len)
-      FLtab_used4G =rep(FLtab_used4G,total_len)
-      FLtab_used4L = rep(FLtab_used4L,total_len)
-      FLtab_used4Q = rep(FLtab_used4Q,total_len)
-      FParam_L = rep(FLtabBatch,total_len)
-      total_len = rep(total_len,total_len)
-      #print(FLtab_used4G)
-      #print(FLtab_used4L)
-      #print(FLtab_used4Q)
-      res = data.frame(FchartNo,FItemName,FSubChartNo,FkeyNo,FLtab,FItemModel,FNote,FIndexTxt,FQty,FGtab,FkeyNo_tag,FLtab_tag,FQty_tag,FTagCount_dim,FTagCount_value,FTagCount_total,FkeyNo_var,FkeyNo_len,FLtab_var,FLtab_len,FQty_var,FQty_len,total_len,FTagMode,FTagNote,FCalcNote,FLtab_used4G,FLtab_used4L,FLtab_used4Q,FParam_L,stringsAsFactors = F )
-
-
-    }
 
 
 
-
-    return(res)
+      return(res)
 
 
 
 
 
-  })
+    })
 
-  data_com = do.call('rbind',data_raw)
+    data_com = do.call('rbind',data_raw)
+
+  }
+
   ncount_com =nrow(data_com)
   if(ncount_com >0){
 
@@ -412,7 +449,9 @@ dm_ReadBy_ChartNo_GL_dealOne<- function(conn=tsda::conn_rds('lcrds'),FchartNo='S
     #数据处理
     dm_ReadBy_ChartNo_LtabBatch_calc(conn = conn,FchartNo = FchartNo,FGtab = FParamG,FLtabBatch = FParamL,page_size = page_size)
     #标准数据处理
+    print('partA')
     data = dm_ReadBy_ChartNo_LtabBatch_dealBom(conn = conn,FchartNo = FchartNo,FParamG = FParamG,FParamL = FParamL,page_size = page_size)
+    print('partB')
     return(data)
 
 

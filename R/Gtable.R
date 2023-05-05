@@ -55,6 +55,9 @@ Gtab_read <- function(file="./data-raw/bom_src.xlsx",sheetName="P235911B000",max
 
     data_melt[,'件号'] <-as.character(data_melt[,'件号'])
     data_melt[,'件号'] <-tsdo::na_replace(data_melt[,'件号'],"")
+    #增加对分图号的处理null
+    data_melt[,'分图号'] <-tsdo::na_replace(data_melt[,'分图号'],"")
+    data_melt[,'件号'] <-tsdo::na_replace(data_melt[,'件号'],"")
     data_melt[,'L番'] <-as.character(data_melt[,'L番'])
     data_melt[,'L番'] <-tsdo::na_replace(data_melt[,'L番'],"")
     data_melt[,'备注'] <-as.character(data_melt[,'备注'])

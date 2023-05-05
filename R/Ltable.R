@@ -344,7 +344,10 @@ Ltab_get_uniqueMembers <- function(conn=tsda::conn_rds('lcrds'),FchartNo='YE603A
   if(ncount >0){
     info <- res$FLtab
   }else{
-    info <- NA
+    #没有查询到,返回了NA信息
+    #info <- NA
+    #调整后将不存在L番设置为''
+    info <- ''
   }
   return(info)
 }
@@ -389,6 +392,7 @@ Ltab_get_varValue <- function(conn=tsda::conn_rds('lcrds'),FchartNo = 'SYE601B67
 #' Ltab_get_varValueBatch()
 Ltab_get_varValueBatch <- function(conn=tsda::conn_rds('lcrds'),FchartNo = 'SE304A200',FLtabBatch ='L33,L67'){
   #针对L番进行处理
+  #
   FLtab_format_sql = tsdo::sql_str2(strsplit(FLtabBatch,',')[[1]])
   sql <- paste0("select  FLtab,FkeyNo,FLength  from t_lcrds_ltab where FchartNo = '",FchartNo,"' and FLtab in (",FLtab_format_sql,")
                 order by   FkeyNo,FLtab

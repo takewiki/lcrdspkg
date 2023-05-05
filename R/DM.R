@@ -84,6 +84,7 @@ dm_writeDB_ChartNo <- function(conn=tsda::conn_rds('lcrds'),FchartNo='SE304A200'
 
   ncount_g = length(FGtabs)
   ncount_l = length(FLtabs)
+  print('bug1')
   if(ncount_g > 0 & !is.na(FGtabs[1])){
     if(ncount_l >0 & !is.na(FLtabs[1])){
 
@@ -1161,7 +1162,63 @@ dmQuery_Batch_file <- function(file="data-raw/DM配件混合查询.xlsx",sheet =
 
 
 
+#' 重算只有G番没有L番的历史数据
+#'
+#' @param conn 连接
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dm_reCalcChartNo_withoutLtab()
+dm_reCalcChartNo_withoutLtab <- function(conn=tsda::conn_rds('lcrds')) {
+sql <- paste0("  select distinct FchartNo from t_lcrds_gtab
+  where FchartNo  not  in
+  (select FchartNo  from t_lcrds_ltab)")
+data <- tsda::sql_select(conn = conn,sql_str = sql)
+ncount =nrow(data)
+if(ncount >0){
+  FchartNos = data$FchartNo
+  lapply(1:ncount, function(i){
+    FchartNo = data$FchartNo[i]
+    print(paste0('正在重算',i,' of ',ncount,' ',FchartNo,'数据'))
 
+
+
+    #清楚结果数据
+    sql1 <- paste0("
+                    delete  from t_lcrds_bom where  FchartNo ='",FchartNo,"'
+    and FParamL is null
+                   ")
+    tsda::sql_update(conn = conn,sql_str = sql1)
+    #清楚过程数据
+    sql2 <- paste0(" delete from t_bom_Detail  where  FchartNo ='",FchartNo,"'
+    and  FParam_L is null  or FParam_L <> '' ")
+
+    tsda::sql_update(conn = conn,sql_str = sql2)
+    #重算相关数据
+    try(dm_writeDB_ChartNo(conn = conn,FchartNo =FchartNo ))
+
+
+
+
+
+
+
+
+
+
+
+
+
+  })
+
+
+}
+
+
+
+}
 
 
 
