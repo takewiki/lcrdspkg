@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 4.8.5
+Version: 4.9.0
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: package for lcrds mainly for bom and price
@@ -25,6 +25,7 @@ Collate:
     'extBarcode.R'
     'intBarCode.R'
     'log.R'
+    'purchasePrice.R'
     'readXlsx.R'
     'soNote.R'
     'sql_createTable.R'
