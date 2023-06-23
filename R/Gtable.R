@@ -514,4 +514,21 @@ order by FchartNo,FGtab,FIndexTxt")
 
 
 
+#' 针对G番进行标准化处理,保留真正的L番，其他值设置为空
+#'
+#' @param x 数据
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Gtab_standard()
+Gtab_standard <- function(x) {
+  x =tsdo::na_replace(x,'')
+  x=tsdo::str_replaceByPrefix(x = x,prefix = 'G',value = '')
+  return(x)
+}
+
+
+
 

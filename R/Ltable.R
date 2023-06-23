@@ -429,3 +429,18 @@ where FchartNo='",FchartNo,"'")
 }
 
 
+
+#' 针对L番进行标准化处理,保留真正的L番，其他值设置为空
+#'
+#' @param x 数据
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' Ltab_standard()
+Ltab_standard <- function(x) {
+  x =tsdo::na_replace(x,'')
+  x=tsdo::str_replaceByPrefix(x = x,prefix = 'L',value = '')
+  return(x)
+}
