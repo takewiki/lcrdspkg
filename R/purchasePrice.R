@@ -54,6 +54,7 @@ purchasePrice_ErpSyncDms <- function(erp_token='BF6CBEB5-BC3E-422B-B96C-32BDACCE
       ,[FBillNo]
       ,[FDate]
       ,[FPrice]
+      ,FUnitName
   FROM  [rds_lc_vw_material_purchasePrice_latest]")
   data = tsda::sql_select2(token = erp_token,sql = sql)
   ncount =nrow(data)
@@ -121,7 +122,8 @@ purchasePriceDms_createTable <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7
 	[FInterID] [int] NOT NULL,
 	[FBillNo] [nvarchar](255) NOT NULL,
 	[FDate] [datetime] NULL,
-	[FPrice] [decimal](28, 10) NOT NULL
+	[FPrice] [decimal](28, 10) NOT NULL,
+		[FUnitName] [varchar](80) NULL
 )")
  sql <- paste0("CREATE TABLE [dbo].[rds_lc_t_material_purchasePrice_latest](
 	[FNumber] [varchar](80) NULL,
@@ -135,7 +137,8 @@ purchasePriceDms_createTable <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7
 	[FInterID] [int] NOT NULL,
 	[FBillNo] [nvarchar](255) NOT NULL,
 	[FDate] [datetime] NULL,
-	[FPrice] [decimal](28, 10) NOT NULL
+	[FPrice] [decimal](28, 10) NOT NULL,
+	[FUnitName] [varchar](80) NULL
 )")
 
  sql_bak <- paste0("CREATE TABLE [dbo].[rds_lc_t_material_purchasePrice_latestBak](
@@ -150,7 +153,8 @@ purchasePriceDms_createTable <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7
 	[FInterID] [int] NOT NULL,
 	[FBillNo] [nvarchar](255) NOT NULL,
 	[FDate] [datetime] NULL,
-	[FPrice] [decimal](28, 10) NOT NULL
+	[FPrice] [decimal](28, 10) NOT NULL,
+	[FUnitName] [varchar](80) NULL
 )")
  #创建表
  tsda::sql_update2(token = dms_token,sql_str = sql_input)
@@ -188,6 +192,7 @@ FNumber  物料编码
 , FBillNo  发票号
 ,FDate 发票日期
 ,FCurrencyName 币别
+,FUnitName 计量单位
 from rds_lc_t_material_purchasePrice_latest")
   }else{
     sql <- paste0("select
@@ -199,6 +204,7 @@ FNumber  物料编码
 , FBillNo  发票号
 ,FDate 发票日期
 ,FCurrencyName 币别
+,FUnitName 计量单位
 from rds_lc_t_material_purchasePrice_latest
 where FChartNumber ='",FChartNumber,"'")
   }

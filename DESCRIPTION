@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 4.9.0
+Version: 4.9.1
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: package for lcrds mainly for bom and price

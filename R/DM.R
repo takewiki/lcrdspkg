@@ -1221,6 +1221,40 @@ if(ncount >0){
 }
 
 
+#'创建视图
+#'
+#' @param dms_token 中台口令
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_createView()
+dmList_createView <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13') {
+  sql <- paste0("create view rds_lc_vw_dmList
+as
+select
+FDmNo
+      ,FLevel
+      ,isnull(FParentRowNo,'0') as FParentNo
+      ,FParentQty
+,FchartNo2,
+FParamG2,
+isnull(FParamL2,'') as FParamL2,
+FParentItemName,
+FSubChartNo as FSubChartNo2,
+FkeyNo  as FSubGNo2,
+FLtab  as FSubLNo2,
+FItemName as FSubItemName,
+FItemModel as FSubItemModel,
+FNote,
+FIndexTxt,FQty,FLength,FTotalQty
+from t_lcrds_dmlist ")
+  tsda::sql_update2(token = dms_token,sql_str = sql)
+
+}
+
+
 
 
 
