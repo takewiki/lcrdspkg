@@ -10,13 +10,66 @@
 dmList_getBillNo<- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13'){
   sql <- paste0("SELECT
 distinct [FDmNo]
-  FROM [dbo].[rds_lc_vw_dmList]")
+  FROM [dbo].[rds_lc_ODS_dmList]  where FIsDo = 0")
   data = tsda::sql_select2(token = dms_token,sql = sql)
   ncount =nrow(data)
   if(ncount>0){
     res <- data$FDmNo
   }else{
     res <- NA
+  }
+  return(res)
+}
+
+
+#' 获取DM单的所有的单据编号
+#'
+#' @param dms_token 口令
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmList_getBillNo()
+dmList_getBillNo2<- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13'){
+  sql <- paste0("select distinct  FDmNo  from t_lcrds_dmlist
+where FDmNo not in
+(
+select distinct FDmNo from rds_lc_ODS_dmList
+
+) ")
+  data = tsda::sql_select2(token = dms_token,sql = sql)
+  ncount =nrow(data)
+  if(ncount>0){
+    res <- data$FDmNo
+  }else{
+    res <- NA
+  }
+  return(res)
+}
+
+
+
+#' 判断是否存在新的DM单
+#'
+#' @param dms_token 口令
+#' @param FDmNo DM单
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' dmListODS_isNew()
+dmListODS_isNew <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13',
+                         FDmNo='DMP235000B1561502') {
+  sql <- paste0("select 1 from rds_lc_ODS_dmList
+where FDmNo ='",FDmNo,"'")
+  data = tsda::sql_select2(token = dms_token,sql = sql)
+  ncount = nrow(data)
+  if(ncount>0){
+    res <- FALSE
+  }else{
+    res <- TRUE
   }
   return(res)
 }
@@ -57,15 +110,24 @@ dmList_toODS <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13',
   data =tsda::sql_select2(token = dms_token,sql = sql)
   ncount =nrow(data)
   if(ncount>0){
-    #存在记录的情况下
-    #针对父项物料，进行接接成标准化物料,功能相当于ERP系统中的图号字段
-    #ERP系统中的图号字段由主图号/分图号+G番+L番组成；另外一种情况是直接由DM单号组成；
-    data$FParentChartNumber_ERP <-paste0(data$FchartNo2,Gtab_standard(data$FParamG2),Ltab_standard(data$FParamL2))
-    data$FSubChartNumber_ERP <- paste0(data$FSubChartNo2,Gtab_standard(data$FSubGNo2),Ltab_standard(data$FSubLNo2))
-    #针对DM单进行处理
-    data$FParentChartNumber_ERP[data$FLevel == 0] <- data$FDmNo[data$FLevel == 0]
-    #将数据写入数据库
-    tsda::db_writeTable2(token = dms_token,table_name = 'rds_lc_ODS_dmList',r_object = data,append = TRUE)
+
+    #如果数据已经存在，则不再写入
+    if(dmListODS_isNew(dms_token = dms_token,FDmNo = FDmNo)){
+      #全新的DM单
+      #存在记录的情况下
+      #针对父项物料，进行接接成标准化物料,功能相当于ERP系统中的图号字段
+      #ERP系统中的图号字段由主图号/分图号+G番+L番组成；另外一种情况是直接由DM单号组成；
+      data$FParentChartNumber_ERP <-paste0(data$FchartNo2,Gtab_standard(data$FParamG2),Ltab_standard(data$FParamL2))
+      data$FSubChartNumber_ERP <- paste0(data$FSubChartNo2,Gtab_standard(data$FSubGNo2),Ltab_standard(data$FSubLNo2))
+      #针对DM单进行处理
+      data$FParentChartNumber_ERP[data$FLevel == 0] <- data$FDmNo[data$FLevel == 0]
+      # 针对数据增加状态处理
+      data$FIsDo = 0
+      #将数据写入数据库
+      tsda::db_writeTable2(token = dms_token,table_name = 'rds_lc_ODS_dmList',r_object = data,append = TRUE)
+    }
+
+
 
   }
   #不能返回数据，否则数据量太大，影响相关性能
@@ -126,7 +188,7 @@ dmListOds_createTable <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C1
 #' @examples
 #' dmList_toODSBatch()
 dmList_toODSBatch <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13'){
-  DmNos = dmList_getBillNo(dms_token = dms_token)
+  DmNos = dmList_getBillNo2(dms_token = dms_token)
   ncount = length(DmNos)
   lapply(1:ncount,function(i){
     FDmNo = DmNos[i]
@@ -166,13 +228,14 @@ where FDmNo='",FDmNo,"' ")
 #' @export
 #'
 #' @examples
-#' dmList_LevelParentNo()
-dmList_LevelParentNo <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13',
-                            FDmNo='DMP235000B1561920',
-                            FLevel =2) {
+#' dmList_ParentNo()
+dmList_ParentNo <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13',
+                            FDmNo='DMP235000B1561920'
+                         ) {
 
   sql <-paste0("select  distinct  FDmNo,FLevel,FParentNo  from   [rds_lc_ODS_dmList]
-where FDmNo='",FDmNo,"' and FLevel = ",FLevel," ")
+where FDmNo='",FDmNo,"'
+order by FLevel desc,FParentNo desc")
   data = tsda::sql_select2(token = dms_token,sql = sql)
   return(data)
 
@@ -418,8 +481,7 @@ FParentAmt decimal(28,10)
 priceModel_purchaseToDMS <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13') {
   sql <- paste0("insert into rds_lc_ods_priceModel
 select   FChartNumber,FNumber,FPrice,FUnit,FDate,FDataSource,FBillNo,FCoefficient
-from  rds_lc_vw_purchasePriceAll
-)")
+from  rds_lc_vw_purchasePriceAll")
   tsda::sql_update2(token = dms_token,sql_str = sql)
 
 }
@@ -510,12 +572,113 @@ where FDmNo='",FDmNo,"'")
   #将模型数据写入价格模板
   tsda::db_writeTable2(token = dms_token,table_name = 'rds_lc_ods_priceModel',r_object = model,append = TRUE)
 
-  return(data)
+ # return(data)
+
+}
+
+
+#' 更新DM单状态
+#'
+#' @param dms_token 口令
+#' @param FDmNo DM单号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' priceModel_DmStatus()
+priceModel_DmStatus <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13',
+                                 FDmNo='DMP235000B1561920'
+){
+  sql <- paste0("    update rds_lc_ODS_dmList  set FIsDo = 1
+  where FDmNo  ='",FDmNo,"'")
+  tsda::sql_update2(token = dms_token,sql_str = sql)
+}
+
+
+#' DM异常处理，删除只有Level等于0的记录
+#'
+#' @param dms_token 口令
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' priceModel_DmErrorDel()
+priceModel_DmErrorDel <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13'
+
+){
+  sql_src <- paste0("   delete    FROM [dbo].[t_lcrds_dmlist]
+  where FDmNo   in (  select fdmno from t_lcrds_dmlist
+  group by  fdmno
+  having max(flevel) =0)")
+  tsda::sql_update2(token = dms_token,sql_str = sql_src)
+  sql_ods <- paste0("   delete    FROM [dbo].[rds_lc_ODS_dmList]
+  where FDmNo    in (  select fdmno from rds_lc_ODS_dmList
+  group by  fdmno
+  having max(flevel) =0)")
+  tsda::sql_update2(token = dms_token,sql_str = sql_ods)
+
+}
+
+
+#' 处理一条记录
+#'
+#' @param dms_token 中台口令
+#' @param FDmNo 单号
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' priceModel_DmCalcOne()
+priceModel_DmCalcOne <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13',
+                            FDmNo='DMP235000B1561920'
+
+){
+
+  dmBill = dmList_ParentNo(dms_token = dms_token,FDmNo = FDmNo)
+  ncount = nrow(dmBill)
+  if(ncount>0){
+    lapply(1:ncount,function(i){
+
+      FDmNo = dmBill$FDmNo[i]
+      FLevel = dmBill$FLevel[i]
+      FParentNo = dmBill$FParentNo[i]
+      priceModel_Unit(dms_token = dms_token,FDmNo = FDmNo,FLevel = FLevel,FParentNo = FParentNo)
+
+
+    })
+    #处理完了更新一下数据状态
+    priceModel_DmStatus(dms_token = dms_token,FDmNo = FDmNo)
+  }
 
 }
 
 
 
+#' 处理所有数据
+#'
+#' @param dms_token 中台口令
+#'
+#' @return 返回值
+#' @export
+#'
+#' @examples
+#' priceModel_DmCalcAll()
+priceModel_DmCalcAll <- function(dms_token='048017E3-CA7E-4DC7-BC87-0EA7D8C69C13'
 
+
+){
+  #处理只有0级的DM单异常数据
+  priceModel_DmErrorDel(dms_token = dms_token)
+  #获取所有的单据编号
+  DmBills = dmList_getBillNo(dms_token = dms_token)
+  #按DM单处理每个单号，完成BOM成本卷算
+  lapply(DmBills, function(FDmNo){
+    print(FDmNo)
+    priceModel_DmCalcOne(dms_token = dms_token,FDmNo = FDmNo)
+  })
+}
 
 

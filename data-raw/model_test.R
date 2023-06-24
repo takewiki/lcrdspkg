@@ -18,3 +18,6 @@ priceModel_Unit(FDmNo = 'DMP235000B1561920',FLevel = 1,FParentNo = '0010')
 
 priceModel_Unit(FDmNo = 'DMP235000B1561920',FLevel = 0,FParentNo = '0')
 
+
+priceModel_DmCalcAll()
+

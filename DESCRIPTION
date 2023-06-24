@@ -1,7 +1,7 @@
 Package: lcrdspkg
 Type: Package
 Title: package for LC RDS project
-Version: 4.9.2
+Version: 5.0.0
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: package for lcrds mainly for bom and price
@@ -27,7 +27,9 @@ Collate:
     'log.R'
     'material.R'
     'measureUnit.R'
+    'priceDetail.R'
     'priceModel.R'
+    'priceSummary.R'
     'purchasePrice.R'
     'readXlsx.R'
     'soNote.R'
